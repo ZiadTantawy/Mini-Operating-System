@@ -1,24 +1,30 @@
 #include "../pcb.c"
-#include "scheduler.c"
 #include "queue.c"
- 
+#include "scheduler.c"
+// Assume these global
+// extern PCBQueue readyQueue;
+// extern PCB* runningProcess;
 
+void scheduleFCFS() {
+    int initialSize = getSize(&readyQueue);
 
-void scheduleFCFS(PCBQueue* readyQueue, PCB** runningProcess) {
-    if (*runningProcess == NULL) {
-        *runningProcess = dequeue(readyQueue);
-        if (*runningProcess != NULL) {
-            updateState(*runningProcess, RUNNING);
-        }
-    }
+    for (int i = 0; i < initialSize; i++) {
+        PCB* runningPCB = dequeue(&readyQueue);
+   
+        updateState(runningPCB, RUNNING);
 
-    if (*runningProcess != NULL) {
-        incrementPC(*runningProcess);
+        // while (runningPCB->state != TERMINATED) {
+        //     incrementPC(runningPCB);
+        //     printf("Executing PID: %d | PC: %d\n", runningPCB->pid, runningProcess->programCounter);
 
-        // Example logic: process terminates after 5 instructions
-        if ((*runningProcess)->programCounter >= 5) {
-            updateState(*runningProcess, TERMINATED);
-            *runningProcess = NULL;
-        }
+        //     if (runningProcess->programCounter >= 5) {
+        //         updateState(runningProcess, TERMINATED);
+        //         printf("Process PID %d terminated.\n", runningProcess->pid);
+        //     }
+        // }
+
+        // free(runningProcess);
+        // runningProcess = NULL;
+        //TODO: Call execute function for the process
     }
 }
