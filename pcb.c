@@ -79,6 +79,5 @@ int main() {
     setPriority(&pcb1, 10);
     
     printPCB(&pcb1);
-    printf ("messi\n");
     return 0;
 }
