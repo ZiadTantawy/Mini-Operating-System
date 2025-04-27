@@ -69,3 +69,16 @@ void setPriority(PCB *pcb, int newPriority) {
     }
     pcb->priority = newPriority;
 }
+
+int main() {
+    PCB pcb1 = createPCB(1, 1000, 2000, 5);
+    printPCB(&pcb1);
+    
+    updateState(&pcb1, READY);
+    incrementPC(&pcb1);
+    setPriority(&pcb1, 10);
+    
+    printPCB(&pcb1);
+    printf ("messi\n");
+    return 0;
+}
