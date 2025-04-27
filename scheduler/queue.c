@@ -1,37 +1,33 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../pcb.c"
 
-typedef struct Node
-{
+// Node for the queue
+typedef struct Node {
     PCB pcb;
     struct Node *next;
 } Node;
 
-typedef struct
-{
+// PCB Queue structure
+typedef struct {
     Node *front;
     Node *rear;
 } PCBQueue;
 
-// ----------------- Methods -----------------
-
 // Initialize the queue
-void initQueue(PCBQueue *q)
-{
+void initQueue(PCBQueue *q) {
     q->front = q->rear = NULL;
 }
 
-// Check if queue is empty
-int isEmpty(PCBQueue *q)
-{
+// Check if the queue is empty
+int isEmpty(PCBQueue *q) {
     return (q->front == NULL);
 }
 
 // Enqueue a PCB into the queue
-void enqueue(PCBQueue *q, PCB pcb)
-{
-    Node* current = (Node*)malloc(sizeof(Node));
+void enqueue(PCBQueue *q, PCB pcb) {
+    Node *current = (Node *)malloc(sizeof(Node));
     if (current == NULL) {
         printf("Memory allocation failed!\n");
         return;
@@ -39,46 +35,40 @@ void enqueue(PCBQueue *q, PCB pcb)
     current->pcb = pcb;
     current->next = NULL;
 
-    if (q->rear == NULL)
-    {
+    if (q->rear == NULL) {
         q->front = q->rear = current;
-    }
-    else
-    {
+    } else {
         q->rear->next = current;
         q->rear = current;
     }
 }
 
-// Dequeue a PCB from the queue
-PCB *dequeue(PCBQueue *q)
-{
-    PCB dummyPCB = {0};
-    if (isEmpty(q))
-    {
+// Dequeue a PCB from the queue -- **RETURN PCB VALUE NOT POINTER**
+PCB dequeue(PCBQueue *q) {
+    PCB dummyPCB;
+    memset(&dummyPCB, 0, sizeof(PCB)); // Create empty PCB for errors
+
+    if (isEmpty(q)) {
         printf("Queue is empty! Returning dummy PCB.\n");
-        return &dummyPCB;
+        return dummyPCB;
     }
 
     Node *temp = q->front;
-    PCB pcb = temp->pcb;
-    q->front = q->front->next;
+    PCB pcb = temp->pcb;  // COPY pcb VALUE
 
-    if (q->front == NULL)
-    {
+    q->front = q->front->next;
+    if (q->front == NULL) {
         q->rear = NULL;
     }
 
     free(temp);
-    return &pcb;
+    return pcb; // Return by value ✅
 }
 
-// Peek at the front PCB without removing it
-PCB *peek(PCBQueue *q)
-{
-    if (isEmpty(q))
-    {
+// Peek the front PCB without removing it
+PCB* peek(PCBQueue *q) {
+    if (isEmpty(q)) {
         return NULL;
     }
-    return &(q->front->pcb);
+    return &(q->front->pcb); // peek returns pointer (safe)
 }
