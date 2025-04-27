@@ -1,5 +1,5 @@
-// #include "../pcb.c"
-// #include "queue.c"
+#include "../pcb.c"
+#include "queue.c"
 
 // SchedulingAlgorithm currentAlgorithm = FCFS;
 // int roundRobinQuantum = 2; // Default
@@ -17,3 +17,7 @@
 //             break;
 //     }
 // }
+
+PCBQueue readyqueue;
+PCBQueue blockedqueue;
+
