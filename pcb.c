@@ -1,17 +1,8 @@
 #include <stdio.h>
+#include "pcb.h" // Include the header
 
-typedef enum { NEW, READY, RUNNING, BLOCKED, TERMINATED } ProcessState;
-
-typedef struct PCB{
-    int pid;
-    ProcessState state;
-    int priority;
-    int programCounter;
-    int memoryStart;
-    int memoryEnd;
-}PCB;
-
-PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority){
+PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority)
+{
     PCB pcb;
     pcb.pid = pid;
     pcb.state = NEW;
@@ -22,35 +13,49 @@ PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority){
     return pcb;
 }
 
-void updateState(PCB *pcb, ProcessState newState){
-    if (pcb == NULL) {
+void updateState(PCB *pcb, ProcessState newState)
+{
+    if (pcb == NULL)
+    {
         printf("Error: NULL PCB pointer passed to updateState.\n");
         return;
     }
     pcb->state = newState;
 }
 
-void incrementPC(PCB *pcb){
-    if (pcb == NULL) {
+void incrementPC(PCB *pcb)
+{
+    if (pcb == NULL)
+    {
         printf("Error: NULL PCB pointer passed to incrementPC.\n");
         return;
     }
     pcb->programCounter++;
 }
 
-const char* stateToString(ProcessState state) {
-    switch(state) {
-        case NEW: return "NEW";
-        case READY: return "READY";
-        case RUNNING: return "RUNNING";
-        case BLOCKED: return "BLOCKED";
-        case TERMINATED: return "TERMINATED";
-        default: return "UNKNOWN";
+const char *stateToString(ProcessState state)
+{
+    switch (state)
+    {
+    case NEW:
+        return "NEW";
+    case READY:
+        return "READY";
+    case RUNNING:
+        return "RUNNING";
+    case BLOCKED:
+        return "BLOCKED";
+    case TERMINATED:
+        return "TERMINATED";
+    default:
+        return "UNKNOWN";
     }
 }
 
-void printPCB(PCB *pcb){
-    if (pcb == NULL) {
+void printPCB(PCB *pcb)
+{
+    if (pcb == NULL)
+    {
         printf("Error: NULL PCB pointer passed to printPCB.\n");
         return;
     }
@@ -62,8 +67,10 @@ void printPCB(PCB *pcb){
     printf("Memory End: %d\n", pcb->memoryEnd);
 }
 
-void setPriority(PCB *pcb, int newPriority) {
-    if (pcb == NULL) {
+void setPriority(PCB *pcb, int newPriority)
+{
+    if (pcb == NULL)
+    {
         printf("Error: NULL PCB pointer passed to setPriority.\n");
         return;
     }

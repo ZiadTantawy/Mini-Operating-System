@@ -3,9 +3,10 @@
 #include "scheduler/queue.c"
 
 // Define Mutex structure
-typedef struct Mutex {
+typedef struct Mutex
+{
     int isLocked;
-    PCB* owner;
+    PCB *owner;
     PCBQueue blockedQueue;
 } Mutex;
 
@@ -19,7 +20,8 @@ extern PCBQueue readyQueue;
 extern PCBQueue blockedQueue;
 
 // Initialize all mutexes
-void initMutexes() {
+void initMutexes()
+{
     userInputMutex.isLocked = 0;
     userInputMutex.owner = NULL;
     initQueue(&userInputMutex.blockedQueue);
@@ -34,25 +36,31 @@ void initMutexes() {
 }
 
 // semWait implementation
-void semWait(Mutex *mutex, PCB *process) {
-    if (mutex->isLocked == 0) {
+void semWait(Mutex *mutex, PCB *process)
+{
+    if (mutex->isLocked == 0)
+    {
         // Resource free, process acquires it
         mutex->isLocked = 1;
         mutex->owner = process;
         printf("Process %d acquired the resource.\n", process->pid);
-    } else {
+    }
+    else
+    {
         // Resource busy, process gets blocked
         printf("Process %d is blocked, resource is busy.\n", process->pid);
         process->state = BLOCKED;
 
-        enqueue(&mutex->blockedQueue, *process);    // Add to resource-specific blocked queue
-        enqueue(&blockedQueue, *process);            // Add to global blocked queue
+        enqueue(&mutex->blockedQueue, *process); // Add to resource-specific blocked queue
+        enqueue(&blockedQueue, *process);        // Add to global blocked queue
     }
 }
 
 // semSignal implementation
-void semSignal(Mutex *mutex) {
-    if (mutex->isLocked == 0) {
+void semSignal(Mutex *mutex)
+{
+    if (mutex->isLocked == 0)
+    {
         printf("Warning: semSignal called on an already free resource.\n");
         return;
     }
@@ -60,10 +68,12 @@ void semSignal(Mutex *mutex) {
     mutex->isLocked = 0;
     mutex->owner = NULL;
 
-    if (!isEmpty(&mutex->blockedQueue)) {
+    if (!isEmpty(&mutex->blockedQueue))
+    {
         // Unblock next process waiting for this resource
-        PCB *nextProcess = dequeue(&mutex->blockedQueue);
-        if (nextProcess == NULL) {
+        PCB nextProcess = dequeue(&mutex->blockedQueue);
+        if (&nextProcess == NULL)
+        {
             printf("Error: NULL process dequeued from resource blocked queue.\n");
             return;
         }
@@ -82,15 +92,18 @@ void semSignal(Mutex *mutex) {
         PCBQueue tempQueue;
         initQueue(&tempQueue);
 
-        while (!isEmpty(&blockedQueue)) {
+        while (!isEmpty(&blockedQueue))
+        {
             PCB tempPCB = dequeue(&blockedQueue);
-            if (tempPCB.pid != nextProcess->pid) {
+            if (tempPCB.pid != nextProcess->pid)
+            {
                 enqueue(&tempQueue, tempPCB);
             }
         }
-        
+
         // Restore remaining blocked processes
-        while (!isEmpty(&tempQueue)) {
+        while (!isEmpty(&tempQueue))
+        {
             enqueue(&blockedQueue, dequeue(&tempQueue));
         }
     }
