@@ -2,7 +2,7 @@
 
 typedef enum { NEW, READY, RUNNING, BLOCKED, TERMINATED } ProcessState;
 
-typedef struct{
+typedef struct PCB{
     int pid;
     ProcessState state;
     int priority;
