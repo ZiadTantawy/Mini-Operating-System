@@ -1,80 +1,74 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "pcb.h" // Include the header instead of pcb.c
+#include "../pcb.c"
 
-typedef struct Node
-{
+// Node for the queue
+typedef struct Node {
     PCB pcb;
     struct Node *next;
 } Node;
 
-typedef struct
-{
+// PCB Queue structure
+typedef struct {
     Node *front;
     Node *rear;
 } PCBQueue;
 
-void initQueue(PCBQueue *q)
-{
+// Initialize the queue
+void initQueue(PCBQueue *q) {
     q->front = q->rear = NULL;
 }
 
-int isEmpty(PCBQueue *q)
-{
+// Check if the queue is empty
+int isEmpty(PCBQueue *q) {
     return (q->front == NULL);
 }
 
-void enqueue(PCBQueue *q, PCB pcb)
-{
+// Enqueue a PCB into the queue
+void enqueue(PCBQueue *q, PCB pcb) {
     Node *current = (Node *)malloc(sizeof(Node));
-    if (current == NULL)
-    {
+    if (current == NULL) {
         printf("Memory allocation failed!\n");
         return;
     }
     current->pcb = pcb;
     current->next = NULL;
 
-    if (q->rear == NULL)
-    {
+    if (q->rear == NULL) {
         q->front = q->rear = current;
-    }
-    else
-    {
+    } else {
         q->rear->next = current;
         q->rear = current;
     }
 }
 
-PCB dequeue(PCBQueue *q)
-{
-    PCB dummyPCB = {0}; // Initialize all fields to 0
+// Dequeue a PCB from the queue -- **RETURN PCB VALUE NOT POINTER**
+PCB dequeue(PCBQueue *q) {
+    PCB dummyPCB;
+    memset(&dummyPCB, 0, sizeof(PCB)); // Create empty PCB for errors
 
-    if (isEmpty(q))
-    {
+    if (isEmpty(q)) {
         printf("Queue is empty! Returning dummy PCB.\n");
         return dummyPCB;
     }
 
     Node *temp = q->front;
-    PCB pcb = temp->pcb;
+    PCB pcb = temp->pcb;  // COPY pcb VALUE
 
     q->front = q->front->next;
-    if (q->front == NULL)
-    {
+    if (q->front == NULL) {
         q->rear = NULL;
     }
 
     free(temp);
-    return pcb;
+    return pcb; // Return by value ✅
 }
 
-PCB *peek(PCBQueue *q)
-{
-    if (isEmpty(q))
-    {
+// Peek the front PCB without removing it
+PCB* peek(PCBQueue *q) {
+    if (isEmpty(q)) {
         return NULL;
     }
-    return &(q->front->pcb);
+    return &(q->front->pcb); // peek returns pointer (safe)
 }

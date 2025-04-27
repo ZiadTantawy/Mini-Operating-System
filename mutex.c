@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include "pcb.c"
 #include "scheduler/queue.c"
+#include "pcb.c"
+#include "scheduler/scheduler.c"  // To access readyQueue, blockedQueue
 
-// Define Mutex structure
-typedef struct Mutex
-{
+// Mutex structure
+typedef struct Mutex {
     int isLocked;
-    PCB *owner;
-    PCBQueue blockedQueue;
+    PCB* owner;         // Pointer to owner PCB
+    PCBQueue blockedQueue; // Blocked queue for this resource
 } Mutex;
 
 // Mutex variables
@@ -20,8 +20,7 @@ extern PCBQueue readyQueue;
 extern PCBQueue blockedQueue;
 
 // Initialize all mutexes
-void initMutexes()
-{
+void initMutexes() {
     userInputMutex.isLocked = 0;
     userInputMutex.owner = NULL;
     initQueue(&userInputMutex.blockedQueue);
@@ -35,75 +34,62 @@ void initMutexes()
     initQueue(&fileMutex.blockedQueue);
 }
 
-// semWait implementation
+// semWait function
 void semWait(Mutex *mutex, PCB *process)
 {
-    if (mutex->isLocked == 0)
-    {
-        // Resource free, process acquires it
+    if (mutex->isLocked == 0) {
+        // Mutex is free, acquire it
         mutex->isLocked = 1;
         mutex->owner = process;
-        printf("Process %d acquired the resource.\n", process->pid);
+        printf("Process %d acquired the mutex.\n", process->pid);
     }
-    else
-    {
-        // Resource busy, process gets blocked
-        printf("Process %d is blocked, resource is busy.\n", process->pid);
+    else {
+        // Mutex is already locked, block the process
+        printf("Process %d is BLOCKED waiting for mutex.\n", process->pid);
         process->state = BLOCKED;
 
-        enqueue(&mutex->blockedQueue, *process); // Add to resource-specific blocked queue
-        enqueue(&blockedQueue, *process);        // Add to global blocked queue
+        enqueue(&mutex->blockedQueue, *process);   // Blocked at resource level
+        enqueue(&blockedQueue, *process);           // Also add to global blockedQueue
     }
 }
 
-// semSignal implementation
+// semSignal function
 void semSignal(Mutex *mutex)
 {
-    if (mutex->isLocked == 0)
-    {
-        printf("Warning: semSignal called on an already free resource.\n");
+    if (mutex->isLocked == 0) {
+        printf("Warning: semSignal called on unlocked mutex.\n");
         return;
     }
 
     mutex->isLocked = 0;
     mutex->owner = NULL;
 
-    if (!isEmpty(&mutex->blockedQueue))
-    {
-        // Unblock next process waiting for this resource
-        PCB nextProcess = dequeue(&mutex->blockedQueue);
-        if (&nextProcess == NULL)
-        {
-            printf("Error: NULL process dequeued from resource blocked queue.\n");
-            return;
-        }
+    if (!isEmpty(&mutex->blockedQueue)) {
+        // Unblock the next waiting process
+        PCB unblockedPCB = dequeue(&mutex->blockedQueue); // Dequeue one PCB
 
-        nextProcess->state = READY;
-        enqueue(&readyQueue, *nextProcess); // Move to readyQueue
+        unblockedPCB.state = READY;
+        enqueue(&readyQueue, unblockedPCB); // Move to readyQueue
 
-        printf("Process %d is unblocked and moved to Ready Queue.\n", nextProcess->pid);
+        printf("Process %d unblocked and moved to READY queue.\n", unblockedPCB.pid);
 
-        // Lock resource again for the newly unblocked process
+        // Lock mutex again for the new owner
         mutex->isLocked = 1;
-        mutex->owner = nextProcess;
+        mutex->owner = &unblockedPCB; // Point to new owner (note: be cautious here if needed)
 
-        // Remove from global blockedQueue
-        // --- Remove manually by searching and skipping ---
+        // Remove from global blockedQueue manually
         PCBQueue tempQueue;
         initQueue(&tempQueue);
 
-        while (!isEmpty(&blockedQueue))
-        {
-            PCB tempPCB = dequeue(&blockedQueue);
-            if (tempPCB.pid != nextProcess->pid)
-            {
-                enqueue(&tempQueue, tempPCB);
+        while (!isEmpty(&blockedQueue)) {
+            PCB temp = dequeue(&blockedQueue);
+            if (temp.pid != unblockedPCB.pid) {
+                enqueue(&tempQueue, temp); // Keep other blocked processes
             }
         }
 
-        // Restore remaining blocked processes
-        while (!isEmpty(&tempQueue))
-        {
+        // Restore tempQueue back to blockedQueue
+        while (!isEmpty(&tempQueue)) {
             enqueue(&blockedQueue, dequeue(&tempQueue));
         }
     }
