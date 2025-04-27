@@ -1,28 +1,40 @@
-#define MAX_SIZE 100
+#include <stdio.h>
+#include <stdlib.h>
 #include "../pcb.c"
+
+// ----------------- Structures -----------------
+
 
 typedef struct Node {
     PCB pcb;
     struct Node* next;
 } Node;
 
-// PCB Queue
 typedef struct {
     Node* front;
     Node* rear;
+    int size;
 } PCBQueue;
+
+// ----------------- Methods -----------------
 
 // Initialize the queue
 void initQueue(PCBQueue* q) {
     q->front = q->rear = NULL;
+    q->size = 0;
 }
 
 // Check if queue is empty
 int isEmpty(PCBQueue* q) {
-    return q->front == NULL;
+    return q->size == 0;
 }
 
-// Enqueue a PCB
+// Get size of the queue
+int getSize(PCBQueue* q) {
+    return q->size;
+}
+
+// Enqueue a PCB into the queue
 void enqueue(PCBQueue* q, PCB pcb) {
     // Node* temp = (Node*)malloc(sizeof(Node));
     // if (temp == NULL) {
@@ -31,7 +43,9 @@ void enqueue(PCBQueue* q, PCB pcb) {
     // }
     // temp->pcb = pcb;
     // temp->next = NULL;
-    Node* current = NULL;
+
+    Node* current;
+    current -> next = NULL;
     current->pcb = pcb;
     if (q->rear == NULL) {
         q->front = q->rear = current;
@@ -39,14 +53,15 @@ void enqueue(PCBQueue* q, PCB pcb) {
         q->rear->next = current;
         q->rear = current;
     }
+    q->size++;
 }
 
-// Dequeue a PCB
-PCB dequeue(PCBQueue* q) {
-    PCB dummyPCB = {0}; // Return a dummy if queue is empty
+// Dequeue a PCB from the queue
+PCB* dequeue(PCBQueue* q) {
+    PCB dummyPCB = {0};
     if (isEmpty(q)) {
         printf("Queue is empty! Returning dummy PCB.\n");
-        return dummyPCB;
+        return &dummyPCB;
     }
 
     Node* temp = q->front;
@@ -58,10 +73,11 @@ PCB dequeue(PCBQueue* q) {
     }
 
     free(temp);
-    return pcb;
+    q->size--;
+    return &pcb;
 }
 
-// Peek at the front PCB
+// Peek at the front PCB without removing it
 PCB* peek(PCBQueue* q) {
     if (isEmpty(q)) {
         return NULL;

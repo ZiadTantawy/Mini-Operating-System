@@ -18,6 +18,7 @@
 //     }
 // }
 
-PCBQueue readyqueue;
-PCBQueue blockedqueue;
+extern PCBQueue readyQueue;
+extern PCBQueue blockedQueue;
+extern int quantumNumber;
 
