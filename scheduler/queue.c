@@ -31,17 +31,14 @@ int isEmpty(PCBQueue *q)
 // Enqueue a PCB into the queue
 void enqueue(PCBQueue *q, PCB pcb)
 {
-    // Node* temp = (Node*)malloc(sizeof(Node));
-    // if (temp == NULL) {
-    //     printf("Memory allocation failed!\n");
-    //     return;
-    // }
-    // temp->pcb = pcb;
-    // temp->next = NULL;
-
-    Node *current;
-    current->next = NULL;
+    Node* current = (Node*)malloc(sizeof(Node));
+    if (current == NULL) {
+        printf("Memory allocation failed!\n");
+        return;
+    }
     current->pcb = pcb;
+    current->next = NULL;
+
     if (q->rear == NULL)
     {
         q->front = q->rear = current;
