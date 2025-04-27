@@ -2,14 +2,12 @@
 #include "scheduler.c"
 #include "queue.c"
 
-
-void scheduleRR() {
-    int initialSize = getSize(&readyQueue);
-    
-    for (int i = 0; i < initialSize; i++) {
-        PCB* runningPCB = dequeue(&readyQueue);
+void scheduleRR()
+{
+    while (!isEmpty(&readyQueue))
+    {
+        PCB *runningPCB = dequeue(&readyQueue);
         updateState(runningPCB, RUNNING);
-        
-      
+        // TODO: Call execute function for the process
     }
 }
