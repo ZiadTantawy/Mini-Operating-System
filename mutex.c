@@ -1,13 +1,14 @@
 #include <stdio.h>
-#include "pcb.h"
-#include "scheduler/queue.c" // Changed from .c to .h
+#include "scheduler/queue.c"
+#include "pcb.c"
+#include "scheduler/scheduler.c" // To access readyQueue, blockedQueue
 
-// Define Mutex structure
+// Mutex structure
 typedef struct Mutex
 {
     int isLocked;
-    PCB *owner;
-    PCBQueue blockedQueue;
+    PCB *owner;            // Pointer to owner PCB
+    PCBQueue blockedQueue; // Blocked queue for this resource
 } Mutex;
 
 // Mutex variables
@@ -35,33 +36,33 @@ void initMutexes()
     initQueue(&fileMutex.blockedQueue);
 }
 
-// semWait implementation
+// semWait function
 void semWait(Mutex *mutex, PCB *process)
 {
     if (mutex->isLocked == 0)
     {
-        // Resource free, process acquires it
+        // Mutex is free, acquire it
         mutex->isLocked = 1;
         mutex->owner = process;
-        printf("Process %d acquired the resource.\n", process->pid);
+        printf("Process %d acquired the mutex.\n", process->pid);
     }
     else
     {
-        // Resource busy, process gets blocked
-        printf("Process %d is blocked, resource is busy.\n", process->pid);
+        // Mutex is already locked, block the process
+        printf("Process %d is BLOCKED waiting for mutex.\n", process->pid);
         process->state = BLOCKED;
 
-        enqueue(&mutex->blockedQueue, *process); // Add to resource-specific blocked queue
-        enqueue(&blockedQueue, *process);        // Add to global blocked queue
+        enqueue(&mutex->blockedQueue, *process); // Blocked at resource level
+        enqueue(&blockedQueue, *process);        // Also add to global blockedQueue
     }
 }
 
-// semSignal implementation
+// semSignal function
 void semSignal(Mutex *mutex)
 {
     if (mutex->isLocked == 0)
     {
-        printf("Warning: semSignal called on an already free resource.\n");
+        printf("Warning: semSignal called on unlocked mutex.\n");
         return;
     }
 
@@ -70,39 +71,32 @@ void semSignal(Mutex *mutex)
 
     if (!isEmpty(&mutex->blockedQueue))
     {
-        // Unblock next process waiting for this resource
-        PCB nextProcess = dequeue(&mutex->blockedQueue);
+        // Unblock the next waiting process
+        PCB unblockedPCB = dequeue(&mutex->blockedQueue); // Dequeue one PCB
 
-        // Check if we got a valid PCB (compare pid instead of address)
-        if (nextProcess.pid == 0) // Assuming pid 0 is invalid
-        {
-            printf("Error: Invalid process dequeued from resource blocked queue.\n");
-            return;
-        }
+        unblockedPCB.state = READY;
+        enqueue(&readyQueue, unblockedPCB); // Move to readyQueue
 
-        nextProcess.state = READY;
-        enqueue(&readyQueue, nextProcess); // Move to readyQueue
+        printf("Process %d unblocked and moved to READY queue.\n", unblockedPCB.pid);
 
-        printf("Process %d is unblocked and moved to Ready Queue.\n", nextProcess.pid);
-
-        // Lock resource again for the newly unblocked process
+        // Lock mutex again for the new owner
         mutex->isLocked = 1;
-        mutex->owner = &nextProcess; // Now taking address of the local variable (see note below)
+        mutex->owner = &unblockedPCB; // Point to new owner (note: be cautious here if needed)
 
-        // Remove from global blockedQueue
+        // Remove from global blockedQueue manually
         PCBQueue tempQueue;
         initQueue(&tempQueue);
 
         while (!isEmpty(&blockedQueue))
         {
-            PCB tempPCB = dequeue(&blockedQueue);
-            if (tempPCB.pid != nextProcess.pid) // Compare pids directly
+            PCB temp = dequeue(&blockedQueue);
+            if (temp.pid != unblockedPCB.pid)
             {
-                enqueue(&tempQueue, tempPCB);
+                enqueue(&tempQueue, temp); // Keep other blocked processes
             }
         }
 
-        // Restore remaining blocked processes
+        // Restore tempQueue back to blockedQueue
         while (!isEmpty(&tempQueue))
         {
             enqueue(&blockedQueue, dequeue(&tempQueue));

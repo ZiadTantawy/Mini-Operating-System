@@ -11,12 +11,12 @@ extern int clockCycle;
 
 void scheduleFCFS()
 {
-    if (isEmpty(&readyQueue))
-        return;
+    if (isEmpty(&readyQueue)) return;
 
-    PCB runningPCB = dequeue(&readyQueue); // Dequeue PCB by value     // Dequeue PCB by value
-    if (runningPCB.pid == 0)
-        return; // Dummy PCB check
+    
+    PCB runningPCB = dequeue(&readyQueue); // Dequeue PCB by value
+     // Dequeue PCB by value
+    if (runningPCB.pid == 0) return; // Dummy PCB check
 
     updateState(&runningPCB, RUNNING); // Set state to RUNNING
     int pcbMemoryStartIndex = runningPCB.memoryStart;
@@ -24,7 +24,7 @@ void scheduleFCFS()
     while (runningPCB.state == RUNNING || runningPCB.state == READY)
     {
         interpret(&runningPCB, pcbMemoryStartIndex); // Execute one instruction
-        printMemory(clockCycle++);                   // Print memory after each clock cycle
+        printMemory(clockCycle++); // Print memory after each clock cycle
 
         if (runningPCB.state == BLOCKED || runningPCB.state == TERMINATED)
             break;
