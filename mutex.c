@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "pcb.c"
-#include "scheduler/queue.c"
+#include "pcb.h"
+#include "scheduler/queue.c" // Changed from .c to .h
 
 // Define Mutex structure
 typedef struct Mutex
@@ -72,30 +72,31 @@ void semSignal(Mutex *mutex)
     {
         // Unblock next process waiting for this resource
         PCB nextProcess = dequeue(&mutex->blockedQueue);
-        if (&nextProcess == NULL)
+
+        // Check if we got a valid PCB (compare pid instead of address)
+        if (nextProcess.pid == 0) // Assuming pid 0 is invalid
         {
-            printf("Error: NULL process dequeued from resource blocked queue.\n");
+            printf("Error: Invalid process dequeued from resource blocked queue.\n");
             return;
         }
 
-        nextProcess->state = READY;
-        enqueue(&readyQueue, *nextProcess); // Move to readyQueue
+        nextProcess.state = READY;
+        enqueue(&readyQueue, nextProcess); // Move to readyQueue
 
-        printf("Process %d is unblocked and moved to Ready Queue.\n", nextProcess->pid);
+        printf("Process %d is unblocked and moved to Ready Queue.\n", nextProcess.pid);
 
         // Lock resource again for the newly unblocked process
         mutex->isLocked = 1;
-        mutex->owner = nextProcess;
+        mutex->owner = &nextProcess; // Now taking address of the local variable (see note below)
 
         // Remove from global blockedQueue
-        // --- Remove manually by searching and skipping ---
         PCBQueue tempQueue;
         initQueue(&tempQueue);
 
         while (!isEmpty(&blockedQueue))
         {
             PCB tempPCB = dequeue(&blockedQueue);
-            if (tempPCB.pid != nextProcess->pid)
+            if (tempPCB.pid != nextProcess.pid) // Compare pids directly
             {
                 enqueue(&tempQueue, tempPCB);
             }
