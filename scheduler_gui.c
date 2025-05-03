@@ -1,4 +1,6 @@
 #include <gtk/gtk.h>
+#include "gui_helpers.h"
+
 
 // Global Widgets
 GtkWidget *process_list, *ready_queue, *blocked_queue, *running_process;
@@ -126,6 +128,15 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_box_pack_start(GTK_BOX(box), auto_btn, TRUE, TRUE, 5);
     gtk_container_add(GTK_CONTAINER(frame), make_expandable(box));
     gtk_grid_attach(GTK_GRID(grid), make_expandable(frame), 1, 2, 2, 1);
+
+    g_signal_connect(start_btn, "clicked", G_CALLBACK(on_start_clicked), window);
+    g_signal_connect(stop_btn, "clicked", G_CALLBACK(on_stop_clicked), window);
+    g_signal_connect(reset_btn, "clicked", G_CALLBACK(on_reset_clicked), window);
+    g_signal_connect(step_btn, "clicked", G_CALLBACK(on_step_clicked), window);
+    g_signal_connect(auto_btn, "clicked", G_CALLBACK(on_auto_clicked), window);
+    g_signal_connect(scheduler_dropdown, "changed", G_CALLBACK(on_scheduler_changed), NULL);
+    g_signal_connect(quantum_spin, "value-changed", G_CALLBACK(on_quantum_changed), NULL);
+    g_signal_connect(add_btn, "clicked", G_CALLBACK(on_load_process_clicked), window);
 
     gtk_widget_show_all(window);
 }
