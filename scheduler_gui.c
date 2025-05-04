@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include "gui_helpers.h"
+#include "gui_handlers.h"
 
 
 // Global Widgets
@@ -139,16 +140,4 @@ static void activate(GtkApplication *app, gpointer user_data) {
     g_signal_connect(add_btn, "clicked", G_CALLBACK(on_load_process_clicked), window);
 
     gtk_widget_show_all(window);
-}
-
-int main(int argc, char **argv) {
-    GtkApplication *app;
-    int status;
-
-    app = gtk_application_new("org.csen602.scheduler", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    status = g_application_run(G_APPLICATION(app), argc, argv);
-    g_object_unref(app);
-
-    return status;
 }
