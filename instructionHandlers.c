@@ -1,8 +1,11 @@
 #include <stdio.h>
-#include "memory.c"
-#include "pcb.c"
-#include "mutex.c"
-
+#include "memory.h"
+#include "pcb.h"
+#include "mutex.h"
+#include "scheduler.h"
+#include "queue.h"
+#include <string.h>
+#include <stdlib.h>  
 
 void handleAssign(const char* params, int pcbMemoryStartIndex) {
     char varName[50], value[50];

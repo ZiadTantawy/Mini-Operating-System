@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../pcb.c"
+#include "pcb.h"
 
 // Node for the queue
 typedef struct Node {

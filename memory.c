@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "pcb.h"
 
 #define MEMORY_SIZE 60
 #define MAX_PROCESSES 10
 
-typedef enum { NEW, READY, RUNNING, BLOCKED, TERMINATED } ProcessState;
+//typedef enum { NEW, READY, RUNNING, BLOCKED, TERMINATED } ProcessState;
 
 // Memory word structure
 typedef struct {
@@ -73,23 +74,45 @@ void deallocateMemory(int start, int end) {
     }
 }
 
-
-
-// Print memory contents
-void printMemory() {
-    printf("\nMemory Contents:\n");
-    printf("+-----+----------------------+----------------------+\n");
-    printf("| Addr| Name                 | Data                 |\n");
-    printf("+-----+----------------------+----------------------+\n");
+void printMemory(int cycle) {
+    printf("\n=== Memory State (Cycle %d) ===\n", cycle);
+    printf("+------+----------------------+----------------------+\n");
+    printf("| Addr | Name                 | Value                |\n");
+    printf("+------+----------------------+----------------------+\n");
     
     for (int i = 0; i < MEMORY_SIZE; i++) {
-        if (strlen(memory[i].name)) {
-            printf("| %3d | %-20s | %-20s |\n", i, memory[i].name, memory[i].data);
-        } else {
-            printf("| %3d | %-20s | %-20s |\n", i, "(free)", "");
+        if (strlen(memory[i].name) > 0 || strlen(memory[i].data) > 0) {
+            // Truncate long values for neat display
+            char name_display[20];
+            char data_display[20];
+            strncpy(name_display, memory[i].name, 19);
+            strncpy(data_display, memory[i].data, 19);
+            name_display[19] = '\0';
+            data_display[19] = '\0';
+            
+            printf("| %4d | %-20s | %-20s |\n", 
+                   i, name_display, data_display);
         }
     }
-    printf("+-----+----------------------+----------------------+\n");
+    printf("+------+----------------------+----------------------+\n");
+    printf("Next free: %d\n\n", next_free);
 }
+
+// Print memory contents
+// void printMemory() {
+//     printf("\nMemory Contents:\n");
+//     printf("+-----+----------------------+----------------------+\n");
+//     printf("| Addr| Name                 | Data                 |\n");
+//     printf("+-----+----------------------+----------------------+\n");
+    
+//     for (int i = 0; i < MEMORY_SIZE; i++) {
+//         if (strlen(memory[i].name)) {
+//             printf("| %3d | %-20s | %-20s |\n", i, memory[i].name, memory[i].data);
+//         } else {
+//             printf("| %3d | %-20s | %-20s |\n", i, "(free)", "");
+//         }
+//     }
+//     printf("+-----+----------------------+----------------------+\n");
+// }
 
 

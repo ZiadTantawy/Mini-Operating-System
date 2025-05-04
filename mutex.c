@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include "scheduler/queue.c"
-#include "pcb.c"
-#include "scheduler/scheduler.c" // To access readyQueue, blockedQueue
+#include "scheduler.h"
+#include "queue.h"
+#include "pcb.h"
+ // To access readyQueue, blockedQueue
 
 // Mutex structure
 typedef struct Mutex

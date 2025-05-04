@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include "memory.c"
-#include "pcb.c"
-
+#include "memory.h"
+#include "pcb.h"
+#include <string.h>
+#include "processLoader.h"
 int allocateProcessMemory(const char* filename){
     FILE* file = fopen(filename, "r");
     if (file == NULL) {

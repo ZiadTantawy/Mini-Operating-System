@@ -1,15 +1,20 @@
-#include "../pcb.c"
-#include "queue.c"
-#include "../interpreter.c"
-#include "../memory.c"
-#include "scheduler.c"
+#include "pcb.h"
+#include "queue.h"
+#include "interpreter.h"
+#include "memory.h"
+#include "scheduler.h"
 #include <stdio.h>
 
 // Priority queues
-extern PCBQueue priority1Queue;
-extern PCBQueue priority2Queue;
-extern PCBQueue priority3Queue;
-extern PCBQueue priority4Queue;
+// extern PCBQueue priority1Queue;
+// extern PCBQueue priority2Queue;
+// extern PCBQueue priority3Queue;
+// extern PCBQueue priority4Queue;
+// Initialize the priority queues (add at file scope)
+PCBQueue priority1Queue = {0};
+PCBQueue priority2Queue = {0};
+PCBQueue priority3Queue = {0};
+PCBQueue priority4Queue = {0};
 extern int clockCycle;
 
 // Helper: choose next process
@@ -36,6 +41,14 @@ void demotePriority(PCB *pcb) {
 
 void scheduleMLFQ()
 {
+    static int initialized = 0;
+    if (!initialized) {
+        initQueue(&priority1Queue);
+        initQueue(&priority2Queue);
+        initQueue(&priority3Queue);
+        initQueue(&priority4Queue);
+        initialized = 1;
+    }
     PCBQueue* queue = getNextPriorityQueue();
     if (queue == NULL) return; // No process to run
 

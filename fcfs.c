@@ -1,8 +1,8 @@
-#include "../pcb.c"
-#include "queue.c"
-#include "../interpreter.c"
-#include "../memory.c"
-#include "scheduler.c"
+#include "pcb.h"
+#include "queue.h"
+#include "interpreter.h"
+#include "memory.h"
+#include "scheduler.h"
 #include <stdio.h>
 
 // Extern global variables
