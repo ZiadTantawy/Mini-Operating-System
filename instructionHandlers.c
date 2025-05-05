@@ -6,6 +6,11 @@
 #include "queue.h"
 #include <string.h>
 #include <stdlib.h>
+#include <gtk/gtk.h>
+#include "gui.h"
+
+// Declare widgets as external since it's defined in gui.c
+extern AppWidgets widgets;
 
 void handleAssign(const char *params, int pcbMemoryEndIndex)
 {
@@ -13,15 +18,43 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
     sscanf(params, "%s %s", varName, value);
 
     // Search for the variable memory slot
-    for (int i = pcbMemoryEndIndex - 6; i < pcbMemoryEndIndex - 3; i++)
+    for (int i = pcbMemoryEndIndex - 3; i < pcbMemoryEndIndex - 1; i++)
     {
         if (strcmp(memory[i].name, varName) == 0 || strcmp(memory[i].name, "") == 0)
         {
             if (strcmp(value, "input") == 0)
             {
-                printf("Please enter a value for %s: ", varName);
-                scanf("%s", value);
+                // GUI-based input handling
+                GtkWidget *dialog;
+                GtkWidget *content_area;
+                GtkWidget *entry;
+                GtkWidget *label;
+                
+                // Create dialog
+                dialog = gtk_dialog_new_with_buttons("Input Required",
+                                                 GTK_WINDOW(widgets.window),
+                                                 GTK_DIALOG_MODAL,
+                                                 "_OK", GTK_RESPONSE_ACCEPT,
+                                                 NULL);
+                
+                // Create content area with label and entry
+                content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+                label = gtk_label_new_with_mnemonic(g_strdup_printf("Please enter a value for %s:", varName));
+                entry = gtk_entry_new();
+                
+                gtk_container_add(GTK_CONTAINER(content_area), label);
+                gtk_container_add(GTK_CONTAINER(content_area), entry);
+                gtk_widget_show_all(dialog);
+                
+                // Run dialog and get input
+                if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+                    strcpy(value, gtk_entry_get_text(GTK_ENTRY(entry)));
+                    add_log_message(g_strdup_printf("User entered: %s", value));
+                }
+                
+                gtk_widget_destroy(dialog);
             }
+            
             strcpy(memory[i].name, varName);
             strcpy(memory[i].data, value);
             return;
@@ -32,7 +65,7 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
 
 void handlePrint(const char *varName, int pcbMemoryEndIndex)
 {
-    for (int i = pcbMemoryEndIndex - 6; i < pcbMemoryEndIndex - 3; i++)
+    for (int i = pcbMemoryEndIndex - 3; i < pcbMemoryEndIndex - 1; i++)
     {
         if (strcmp(memory[i].name, varName) == 0)
         {
@@ -96,7 +129,7 @@ void handlePrintFromTo(const char *params, int pcbEndIndex)
 
     int a = -1, b = -1;
 
-    for (int i = pcbEndIndex - 6; i < pcbEndIndex - 3; i++)
+    for (int i = pcbEndIndex - 3; i < pcbEndIndex - 1; i++)
     {
         if (strcmp(memory[i].name, var1) == 0)
         {
@@ -152,7 +185,7 @@ void handleReadFile(const char *filename, int pcbMemoryEndIndex)
     fclose(fp);
 
     // Save into a free variable slot
-    for (int i = pcbMemoryEndIndex - 6; i < pcbMemoryEndIndex - 3; i++)
+    for (int i = pcbMemoryEndIndex - 3; i < pcbMemoryEndIndex - 1; i++)
     {
         if (strcmp(memory[i].name, "") == 0)
         {

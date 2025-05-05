@@ -49,5 +49,6 @@ typedef struct {
 
 void initialize_gui(int *argc, char ***argv);
 void update_gui(AppWidgets *widgets);
+void add_log_message(const char *message);
 
 #endif
