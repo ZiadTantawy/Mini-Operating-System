@@ -5,97 +5,84 @@
 #include "scheduler.h"
 #include <stdio.h>
 
-// Extern global variables
-extern PCBQueue readyQueue;
-extern int clockCycle;
-extern int quantumNumber; // Number of instructions allowed per process in a turn
-
 void scheduleRR()
 {
-    static PCB runningPCB;
-    static int quantumUsed = 0;
-    static int hasActiveProcess = 0;
-
-    while (1)
+    if (runningPCB.pid == 0 || runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
     {
-        if (!hasActiveProcess)
+        if (!isEmpty(&readyQueue))
         {
-            if (isEmpty(&readyQueue))
-                return;
-
             runningPCB = dequeue(&readyQueue);
-            if (runningPCB.pid == 0)
-                return;
-
-            quantumUsed = 0;
-            hasActiveProcess = 1;
-            updateState(&runningPCB, RUNNING);
+            runningPCB.state = RUNNING;
+            rrTimeSliceCounter = 0;
+            printf("RR: Running PID %d\n", runningPCB.pid);
         }
-
-        interpret(&runningPCB, runningPCB.memoryStart);
-        printMemory(clockCycle++);
-        quantumUsed++;
-
-        if (runningPCB.state == TERMINATED)
+        else
         {
-            printf("Process %d finished execution.\n", runningPCB.pid);
-            hasActiveProcess = 0;
+            printf("RR: No process ready to run\n");
+            return;
         }
-        else if (runningPCB.state == BLOCKED)
-        {
-            printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
-            hasActiveProcess = 0;
-        }
-        else if (quantumUsed >= quantumNumber)
-        {
-            printf("Process %d used quantum. Re-enqueueing.\n", runningPCB.pid);
-            enqueue(&readyQueue, runningPCB);
-            hasActiveProcess = 0;
-        }
+    }
 
-        if (!hasActiveProcess && isEmpty(&readyQueue))
-            break;
+    while (rrTimeSliceCounter < quantumNumber)
+    {
+        interpret(&runningPCB, runningPCB.memoryEnd + 1); // Executes one instruction
+        rrTimeSliceCounter++;
+
+        if (runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
+        {
+            printf("RR: Process %d terminated or blocked\n", runningPCB.pid);
+            runningPCB.pid = 0;
+            rrTimeSliceCounter = 0;
+            return;
+        }
+    }
+
+    // Time slice expired — requeue if still running
+    if (runningPCB.state == RUNNING)
+    {
+        runningPCB.state = READY;
+        enqueue(&readyQueue, runningPCB);
+        printf("RR: Time slice over, requeued PID %d\n", runningPCB.pid);
+        runningPCB.pid = 0;
+        rrTimeSliceCounter = 0;
     }
 }
+
 // Global static for one-step logic
-static PCB rr_runningPCB;
-static int rr_quantumUsed = 0;
-static int rr_hasActiveProcess = 0;
 
 void scheduleRR_OneStep()
 {
-    if (!rr_hasActiveProcess)
+    if (runningPCB.pid == 0 || runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
     {
-        if (isEmpty(&readyQueue))
+        if (!isEmpty(&readyQueue))
+        {
+            runningPCB = dequeue(&readyQueue);
+            runningPCB.state = RUNNING;
+            rrTimeSliceCounter = 0;
+            printf("RR: Running process %d\n", runningPCB.pid);
+        }
+        else
+        {
+            printf("RR: No process is ready\n");
             return;
-
-        rr_runningPCB = dequeue(&readyQueue);
-        if (rr_runningPCB.pid == 0)
-            return;
-
-        rr_quantumUsed = 0;
-        rr_hasActiveProcess = 1;
-        updateState(&rr_runningPCB, RUNNING);
+        }
     }
 
-    interpret(&rr_runningPCB, rr_runningPCB.memoryStart);
-    printMemory(clockCycle++);
-    rr_quantumUsed++;
+    interpret(&runningPCB, runningPCB.memoryEnd + 1); // Executes one instruction
+    rrTimeSliceCounter++;
 
-    if (rr_runningPCB.state == TERMINATED)
+    if (runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
     {
-        printf("Process %d finished execution.\n", rr_runningPCB.pid);
-        rr_hasActiveProcess = 0;
+        printf("RR: Process %d terminated or blocked\n", runningPCB.pid);
+        runningPCB.pid = 0; // Free to run next
+        rrTimeSliceCounter = 0;
     }
-    else if (rr_runningPCB.state == BLOCKED)
+    else if (rrTimeSliceCounter >= quantumNumber)
     {
-        printf("Process %d is BLOCKED. Will not re-enqueue.\n", rr_runningPCB.pid);
-        rr_hasActiveProcess = 0;
-    }
-    else if (rr_quantumUsed >= quantumNumber)
-    {
-        printf("Process %d quantum ended. Re-enqueueing.\n", rr_runningPCB.pid);
-        enqueue(&readyQueue, rr_runningPCB);
-        rr_hasActiveProcess = 0;
+        printf("RR: Time quantum expired for PID %d, re-queuing\n", runningPCB.pid);
+        runningPCB.state = READY;
+        enqueue(&readyQueue, runningPCB);
+        runningPCB.pid = 0;
+        rrTimeSliceCounter = 0;
     }
 }

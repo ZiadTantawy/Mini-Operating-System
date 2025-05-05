@@ -13,6 +13,11 @@ extern PCBQueue priority1Queue;
 extern PCBQueue priority2Queue;
 extern PCBQueue priority3Queue;
 extern PCBQueue priority4Queue;
+extern PCB runningPCB;
+extern int rrTimeSliceCounter;
+extern int mlfqTimeSliceCounter;
+extern int currentQueueLevel;
+extern int mlfqQueueCount;
 // Scheduling algorithms enum
 typedef enum
 {

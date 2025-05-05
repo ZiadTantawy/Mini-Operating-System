@@ -38,10 +38,11 @@ int allocateProcessMemory(const char *filename)
 
 void reserveVariables()
 {
+    char varNames[3] = {'a', 'b', 'c'};
     for (int i = 0; i < 3; i++)
     {
         char varName[50];
-        sprintf(varName, "var_%d", i);
+        sprintf(varName, "%c", varNames[i]); // Use %c for character and varNames array
         writeMemory(next_free++, varName, "");
     }
 }

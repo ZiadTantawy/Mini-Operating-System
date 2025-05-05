@@ -51,65 +51,47 @@
 // For Step: execute ONE instruction only
 void scheduleFCFS_OneStep()
 {
-    if (isEmpty(&readyQueue))
-        return;
+    // If no process is currently running, fetch one from the queue
+    if (runningPCB.pid == 0 || runningPCB.state == TERMINATED)
+    {
+        if (!isEmpty(&readyQueue))
+        {
+            runningPCB = dequeue(&readyQueue);
+            updateState(&runningPCB, RUNNING);
+        }
+        else
+        {
+            return; // No process to run
+        }
+    }
 
-    PCB runningPCB = dequeue(&readyQueue);
-    if (runningPCB.pid == 0)
-        return;
-
-    updateState(&runningPCB, RUNNING);
+    // Execute one instruction
     int pcbMemoryEndIndex = runningPCB.memoryEnd + 1;
-
     interpret(&runningPCB, pcbMemoryEndIndex);
     printMemory(clockCycle++);
 
+    // Handle state transitions
     if (runningPCB.state == TERMINATED)
     {
         printf("Process %d finished execution.\n", runningPCB.pid);
-    }
-    else if (runningPCB.state == READY)
-    {
-        enqueue(&readyQueue, runningPCB);
+        runningPCB.pid = 0; // Reset
     }
     else if (runningPCB.state == BLOCKED)
     {
-        printf("Process %d is BLOCKED.\n", runningPCB.pid);
+        printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
+        runningPCB.pid = 0; // Release current running PCB (mutex will handle requeue)
+    }
+    else if (runningPCB.state == READY)
+    {
+        // Stay in runningPCB — still executing
     }
 }
 
 // For Start: full FCFS behavior
 void scheduleFCFS()
 {
-    if (isEmpty(&readyQueue))
-        return;
-
-    PCB runningPCB = dequeue(&readyQueue);
-    if (runningPCB.pid == 0)
-        return;
-
-    updateState(&runningPCB, RUNNING);
-    int pcbMemoryStartIndex = runningPCB.memoryStart;
-
-    while (runningPCB.state == RUNNING || runningPCB.state == READY)
+    while (!isEmpty(&readyQueue) || runningPCB.pid != 0)
     {
-        interpret(&runningPCB, pcbMemoryStartIndex);
-        printMemory(clockCycle++);
-
-        if (runningPCB.state == BLOCKED || runningPCB.state == TERMINATED)
-            break;
-    }
-
-    if (runningPCB.state == TERMINATED)
-    {
-        printf("Process %d finished execution.\n", runningPCB.pid);
-    }
-    else if (runningPCB.state == READY)
-    {
-        enqueue(&readyQueue, runningPCB);
-    }
-    else if (runningPCB.state == BLOCKED)
-    {
-        printf("Process %d is BLOCKED.\n", runningPCB.pid);
+        scheduleFCFS_OneStep();
     }
 }

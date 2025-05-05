@@ -20,6 +20,8 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
     // Search for the variable memory slot
     for (int i = pcbMemoryEndIndex - 3; i < pcbMemoryEndIndex - 1; i++)
     {
+        printf("Memory Name : %s", memory[i].name);
+        printf("Variable Name:  %s\n", varName);
         if (strcmp(memory[i].name, varName) == 0 || strcmp(memory[i].name, "") == 0)
         {
             if (strcmp(value, "input") == 0)
@@ -29,32 +31,33 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
                 GtkWidget *content_area;
                 GtkWidget *entry;
                 GtkWidget *label;
-                
+
                 // Create dialog
                 dialog = gtk_dialog_new_with_buttons("Input Required",
-                                                 GTK_WINDOW(widgets.window),
-                                                 GTK_DIALOG_MODAL,
-                                                 "_OK", GTK_RESPONSE_ACCEPT,
-                                                 NULL);
-                
+                                                     GTK_WINDOW(widgets.window),
+                                                     GTK_DIALOG_MODAL,
+                                                     "_OK", GTK_RESPONSE_ACCEPT,
+                                                     NULL);
+
                 // Create content area with label and entry
                 content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
                 label = gtk_label_new_with_mnemonic(g_strdup_printf("Please enter a value for %s:", varName));
                 entry = gtk_entry_new();
-                
+
                 gtk_container_add(GTK_CONTAINER(content_area), label);
                 gtk_container_add(GTK_CONTAINER(content_area), entry);
                 gtk_widget_show_all(dialog);
-                
+
                 // Run dialog and get input
-                if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+                if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+                {
                     strcpy(value, gtk_entry_get_text(GTK_ENTRY(entry)));
                     add_log_message(g_strdup_printf("User entered: %s", value));
                 }
-                
+
                 gtk_widget_destroy(dialog);
             }
-            
+
             strcpy(memory[i].name, varName);
             strcpy(memory[i].data, value);
             return;

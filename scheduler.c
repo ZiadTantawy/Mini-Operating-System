@@ -9,6 +9,12 @@ PCBQueue readyQueue;
 PCBQueue blockedQueue;
 int quantumNumber = 2; // Default quantum
 int clockCycle = 0;    // Global clock cycle counter
+PCB runningPCB = {0};  // Global currently executing process
+
+int rrTimeSliceCounter = 0;
+int mlfqTimeSliceCounter = 0;
+int currentQueueLevel = 0;
+int mlfqQueueCount = 4;
 
 // typedef enum { FCFS, RR, MLFQ } SchedulingAlgorithm;
 
