@@ -23,7 +23,7 @@ char* fetchInstruction(int pcbStartIndex) {
 void executeInstruction(const char* instruction, PCB *pcb, int pcbMemoryStartIndex) {
     if (!instruction) {
         updateState(pcb, TERMINATED);
-        writeMemory(pcbMemoryStartIndex + 1, "PCB_state", "TERMINATED");
+        writeMemory(pcbMemoryStartIndex + 11, "PCB_state", "TERMINATED");
         return;
     }
 
@@ -51,7 +51,7 @@ void executeInstruction(const char* instruction, PCB *pcb, int pcbMemoryStartInd
         // Save the updated PC to memory
         char buffer[50];
         sprintf(buffer, "%d", pcb->programCounter);
-        writeMemory(pcbMemoryStartIndex + 3, "PCB_pc", buffer);
+        writeMemory(pcbMemoryStartIndex + 13, "PCB_pc", buffer);
     }
 }
 

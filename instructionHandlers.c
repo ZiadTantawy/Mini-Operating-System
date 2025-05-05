@@ -49,7 +49,7 @@ void handleSemWait(const char* resourceName, PCB *pcb, int pcbMemoryStartIndex) 
 
     // If the process got BLOCKED, update memory too
     if (pcb->state == BLOCKED) {
-        writeMemory(pcbMemoryStartIndex + 1, "PCB_state", "BLOCKED");
+        writeMemory(pcbMemoryStartIndex + 11, "PCB_state", "BLOCKED");
     }
 }
 
