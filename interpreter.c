@@ -23,7 +23,7 @@ char* fetchInstruction(int pcbStartIndex) {
 void executeInstruction(const char* instruction, PCB *pcb, int pcbMemoryStartIndex) {
     if (!instruction) {
         updateState(pcb, TERMINATED);
-        writeMemory(pcbMemoryStartIndex + 11, "PCB_state", "TERMINATED");
+        writeMemory(pcb->memoryEnd + 2 , "PCB_state", "TERMINATED");
         return;
     }
 

@@ -37,8 +37,6 @@ const char *stateToString(ProcessState state)
 {
     switch (state)
     {
-    case NEW:
-        return "NEW";
     case READY:
         return "READY";
     case RUNNING:
