@@ -3,9 +3,14 @@
 #include "pcb.h"
 #include <string.h>
 #include "processLoader.h"
-int allocateProcessMemory(const char* filename){
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) {
+#include "queue.h"
+#include "scheduler.h"
+
+int allocateProcessMemory(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+    {
         printf("Error: Could not open file %s\n", filename);
         return -1;
     }
@@ -14,8 +19,10 @@ int allocateProcessMemory(const char* filename){
     int startIndex = next_free;
     int instructionIndex = 0;
 
-    while(fgets(line, sizeof(line), file) != NULL){
-        if (next_free >= MEMORY_SIZE) {
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        if (next_free >= MEMORY_SIZE)
+        {
             printf("Error: Not enough memory for instructions.\n");
             fclose(file);
             return -1;
@@ -29,15 +36,18 @@ int allocateProcessMemory(const char* filename){
     return startIndex;
 }
 
-void reserveVariables() {
-    for (int i = 0; i < 3; i++) {
+void reserveVariables()
+{
+    for (int i = 0; i < 3; i++)
+    {
         char varName[50];
         sprintf(varName, "var_%d", i);
         writeMemory(next_free++, varName, "");
     }
 }
 
-void savePCB(PCB pcb) {
+void savePCB(PCB pcb)
+{
     char buffer[50];
 
     sprintf(buffer, "%d", pcb.pid);
@@ -57,16 +67,18 @@ void savePCB(PCB pcb) {
     writeMemory(next_free++, "PCB_end", buffer);
 }
 
-
-int loadProcess(const char* filename, int pid) {
+int loadProcess(const char *filename, int pid)
+{
     int startIndex = allocateProcessMemory(filename);
-    if (startIndex == -1) return -1;
+    if (startIndex == -1)
+        return -1;
 
     reserveVariables();
     int endIndex = next_free - 1;
 
     PCB pcb = createPCB(pid, startIndex, endIndex, 1);
     savePCB(pcb);
+    enqueue(&readyQueue, pcb); // Enqueue the PCB to the ready queue
 
     return startIndex;
 }

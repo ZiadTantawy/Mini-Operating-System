@@ -18,78 +18,152 @@ PCBQueue priority4Queue = {0};
 extern int clockCycle;
 
 // Helper: choose next process
-PCBQueue* getNextPriorityQueue() {
-    if (!isEmpty(&priority1Queue)) return &priority1Queue;
-    if (!isEmpty(&priority2Queue)) return &priority2Queue;
-    if (!isEmpty(&priority3Queue)) return &priority3Queue;
-    if (!isEmpty(&priority4Queue)) return &priority4Queue;
+PCBQueue *getNextPriorityQueue()
+{
+    if (!isEmpty(&priority1Queue))
+        return &priority1Queue;
+    if (!isEmpty(&priority2Queue))
+        return &priority2Queue;
+    if (!isEmpty(&priority3Queue))
+        return &priority3Queue;
+    if (!isEmpty(&priority4Queue))
+        return &priority4Queue;
     return NULL;
 }
 
 // Helper: get quantum per level
-int getQuantumForPriority(int priority) {
-    if (priority == 1) return 1;
-    if (priority == 2) return 2;
-    if (priority == 3) return 4;
+int getQuantumForPriority(int priority)
+{
+    if (priority == 1)
+        return 1;
+    if (priority == 2)
+        return 2;
+    if (priority == 3)
+        return 4;
     return 8; // priority 4
 }
 
 // Helper: demote priority
-void demotePriority(PCB *pcb) {
-    if (pcb->priority < 4) pcb->priority++;
+void demotePriority(PCB *pcb)
+{
+    if (pcb->priority < 4)
+        pcb->priority++;
 }
 
 void scheduleMLFQ()
 {
-    static int initialized = 0;
-    if (!initialized) {
-        initQueue(&priority1Queue);
-        initQueue(&priority2Queue);
-        initQueue(&priority3Queue);
-        initQueue(&priority4Queue);
-        initialized = 1;
-    }
-    PCBQueue* queue = getNextPriorityQueue();
-    if (queue == NULL) return; // No process to run
+    static PCB runningPCB;
+    static int quantumUsed = 0;
+    static int hasActiveProcess = 0;
 
-    PCB runningPCB = dequeue(queue); // Dequeue PCB by value
-    if (runningPCB.pid == 0) return; // Dummy PCB check
-
-    updateState(&runningPCB, RUNNING);
-    int pcbMemoryStartIndex = runningPCB.memoryStart;
-
-    int quantum = getQuantumForPriority(runningPCB.priority);
-    int quantumUsed = 0;
-
-    while ((runningPCB.state == RUNNING || runningPCB.state == READY) && quantumUsed < quantum)
+    while (1)
     {
-        interpret(&runningPCB, pcbMemoryStartIndex); // Execute one instruction
-        printMemory(clockCycle++); // Print memory after each clock cycle
+        if (!hasActiveProcess)
+        {
+            PCBQueue *queue = getNextPriorityQueue();
+            if (queue == NULL)
+                return;
+
+            runningPCB = dequeue(queue);
+            if (runningPCB.pid == 0)
+                return;
+
+            quantumUsed = 0;
+            hasActiveProcess = 1;
+            updateState(&runningPCB, RUNNING);
+        }
+
+        interpret(&runningPCB, runningPCB.memoryStart);
+        printMemory(clockCycle++);
         quantumUsed++;
 
-        if (runningPCB.state == BLOCKED || runningPCB.state == TERMINATED)
+        int quantum = getQuantumForPriority(runningPCB.priority);
+
+        if (runningPCB.state == TERMINATED)
+        {
+            printf("Process %d finished execution.\n", runningPCB.pid);
+            hasActiveProcess = 0;
+        }
+        else if (runningPCB.state == BLOCKED)
+        {
+            printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
+            hasActiveProcess = 0;
+        }
+        else if (quantumUsed >= quantum)
+        {
+            printf("Process %d finished its quantum. Demoting and re-enqueueing.\n", runningPCB.pid);
+            demotePriority(&runningPCB);
+
+            if (runningPCB.priority == 1)
+                enqueue(&priority1Queue, runningPCB);
+            else if (runningPCB.priority == 2)
+                enqueue(&priority2Queue, runningPCB);
+            else if (runningPCB.priority == 3)
+                enqueue(&priority3Queue, runningPCB);
+            else
+                enqueue(&priority4Queue, runningPCB);
+
+            hasActiveProcess = 0;
+        }
+
+        if (!hasActiveProcess && getNextPriorityQueue() == NULL)
             break;
     }
+}
 
-    if (runningPCB.state == TERMINATED)
+// Globals for one-step mode
+static PCB mlfq_runningPCB;
+static int mlfq_quantumUsed = 0;
+static int mlfq_hasActiveProcess = 0;
+
+void scheduleMLFQ_OneStep()
+{
+    if (!mlfq_hasActiveProcess)
     {
-        printf("Process %d finished execution.\n", runningPCB.pid);
-        // No re-enqueue
+        PCBQueue *queue = getNextPriorityQueue();
+        if (queue == NULL)
+            return;
+
+        mlfq_runningPCB = dequeue(queue);
+        if (mlfq_runningPCB.pid == 0)
+            return;
+
+        mlfq_quantumUsed = 0;
+        mlfq_hasActiveProcess = 1;
+        updateState(&mlfq_runningPCB, RUNNING);
     }
-    else if (runningPCB.state == READY)
+
+    interpret(&mlfq_runningPCB, mlfq_runningPCB.memoryStart);
+    printMemory(clockCycle++);
+    mlfq_quantumUsed++;
+
+    int quantum = getQuantumForPriority(mlfq_runningPCB.priority);
+
+    if (mlfq_runningPCB.state == TERMINATED)
     {
-        printf("Process %d finished its quantum. Demoting and re-enqueueing.\n", runningPCB.pid);
-        demotePriority(&runningPCB);
+        printf("Process %d finished execution.\n", mlfq_runningPCB.pid);
+        mlfq_hasActiveProcess = 0;
+    }
+    else if (mlfq_runningPCB.state == BLOCKED)
+    {
+        printf("Process %d is BLOCKED. Will not re-enqueue.\n", mlfq_runningPCB.pid);
+        mlfq_hasActiveProcess = 0;
+    }
+    else if (mlfq_quantumUsed >= quantum)
+    {
+        printf("Process %d quantum ended. Demoting and re-enqueueing.\n", mlfq_runningPCB.pid);
+        demotePriority(&mlfq_runningPCB);
 
         // Enqueue based on new priority
-        if (runningPCB.priority == 1) enqueue(&priority1Queue, runningPCB);
-        else if (runningPCB.priority == 2) enqueue(&priority2Queue, runningPCB);
-        else if (runningPCB.priority == 3) enqueue(&priority3Queue, runningPCB);
-        else enqueue(&priority4Queue, runningPCB);
-    }
-    else if (runningPCB.state == BLOCKED)
-    {
-        printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
-        // Blocked processes are managed by mutex logic
+        if (mlfq_runningPCB.priority == 1)
+            enqueue(&priority1Queue, mlfq_runningPCB);
+        else if (mlfq_runningPCB.priority == 2)
+            enqueue(&priority2Queue, mlfq_runningPCB);
+        else if (mlfq_runningPCB.priority == 3)
+            enqueue(&priority3Queue, mlfq_runningPCB);
+        else
+            enqueue(&priority4Queue, mlfq_runningPCB);
+
+        mlfq_hasActiveProcess = 0;
     }
 }

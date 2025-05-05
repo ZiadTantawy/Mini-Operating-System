@@ -12,39 +12,90 @@ extern int quantumNumber; // Number of instructions allowed per process in a tur
 
 void scheduleRR()
 {
-    if (isEmpty(&readyQueue)) return;
+    static PCB runningPCB;
+    static int quantumUsed = 0;
+    static int hasActiveProcess = 0;
 
-    PCB runningPCB = dequeue(&readyQueue); // Dequeue PCB by value
-    if (runningPCB.pid == 0) return; // Dummy PCB check
-
-    updateState(&runningPCB, RUNNING);
-    int pcbMemoryStartIndex = runningPCB.memoryStart;
-
-    int quantumUsed = 0;
-
-    while ((runningPCB.state == RUNNING || runningPCB.state == READY) && quantumUsed < quantumNumber)
+    while (1)
     {
-        interpret(&runningPCB, pcbMemoryStartIndex); // Execute one instruction
-        printMemory(clockCycle++); // Print memory after each clock cycle
+        if (!hasActiveProcess)
+        {
+            if (isEmpty(&readyQueue))
+                return;
+
+            runningPCB = dequeue(&readyQueue);
+            if (runningPCB.pid == 0)
+                return;
+
+            quantumUsed = 0;
+            hasActiveProcess = 1;
+            updateState(&runningPCB, RUNNING);
+        }
+
+        interpret(&runningPCB, runningPCB.memoryStart);
+        printMemory(clockCycle++);
         quantumUsed++;
 
-        if (runningPCB.state == BLOCKED || runningPCB.state == TERMINATED)
+        if (runningPCB.state == TERMINATED)
+        {
+            printf("Process %d finished execution.\n", runningPCB.pid);
+            hasActiveProcess = 0;
+        }
+        else if (runningPCB.state == BLOCKED)
+        {
+            printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
+            hasActiveProcess = 0;
+        }
+        else if (quantumUsed >= quantumNumber)
+        {
+            printf("Process %d used quantum. Re-enqueueing.\n", runningPCB.pid);
+            enqueue(&readyQueue, runningPCB);
+            hasActiveProcess = 0;
+        }
+
+        if (!hasActiveProcess && isEmpty(&readyQueue))
             break;
     }
+}
+// Global static for one-step logic
+static PCB rr_runningPCB;
+static int rr_quantumUsed = 0;
+static int rr_hasActiveProcess = 0;
 
-    if (runningPCB.state == TERMINATED)
+void scheduleRR_OneStep()
+{
+    if (!rr_hasActiveProcess)
     {
-        printf("Process %d finished execution.\n", runningPCB.pid);
-        // No re-enqueue
+        if (isEmpty(&readyQueue))
+            return;
+
+        rr_runningPCB = dequeue(&readyQueue);
+        if (rr_runningPCB.pid == 0)
+            return;
+
+        rr_quantumUsed = 0;
+        rr_hasActiveProcess = 1;
+        updateState(&rr_runningPCB, RUNNING);
     }
-    else if (runningPCB.state == READY)
+
+    interpret(&rr_runningPCB, rr_runningPCB.memoryStart);
+    printMemory(clockCycle++);
+    rr_quantumUsed++;
+
+    if (rr_runningPCB.state == TERMINATED)
     {
-        printf("Process %d used quantum and remains READY. Re-enqueueing.\n", runningPCB.pid);
-        enqueue(&readyQueue, runningPCB); // Re-enqueue if still ready
+        printf("Process %d finished execution.\n", rr_runningPCB.pid);
+        rr_hasActiveProcess = 0;
     }
-    else if (runningPCB.state == BLOCKED)
+    else if (rr_runningPCB.state == BLOCKED)
     {
-        printf("Process %d is BLOCKED. Will not re-enqueue.\n", runningPCB.pid);
-        // Blocked processes are managed by mutex logic
+        printf("Process %d is BLOCKED. Will not re-enqueue.\n", rr_runningPCB.pid);
+        rr_hasActiveProcess = 0;
+    }
+    else if (rr_quantumUsed >= quantumNumber)
+    {
+        printf("Process %d quantum ended. Re-enqueueing.\n", rr_runningPCB.pid);
+        enqueue(&readyQueue, rr_runningPCB);
+        rr_hasActiveProcess = 0;
     }
 }
