@@ -5,7 +5,7 @@ PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority)
 {
     PCB pcb;
     pcb.pid = pid;
-    pcb.state = NEW;
+    pcb.state = READY;
     pcb.priority = priority;
     pcb.programCounter = 0;
     pcb.memoryStart = memoryStart;
