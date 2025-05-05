@@ -6,8 +6,8 @@
 #include <stdlib.h>
 char *fetchInstruction(int pcbEndIndex)
 {
-    int pc = atoi(readMemory(pcbEndIndex + 8).data);
-    int start = atoi(readMemory(pcbEndIndex + 10).data);
+    int pc = atoi(readMemory(pcbEndIndex + 3).data);
+    int start = atoi(readMemory(pcbEndIndex + 4).data);
 
     char instructionName[50];
     sprintf(instructionName, "instruction%d", pc);
@@ -28,7 +28,7 @@ void executeInstruction(const char *instruction, PCB *pcb)
     if (!instruction)
     {
         updateState(pcb, TERMINATED);
-        writeMemory(pcb->memoryEnd + 2, "PCB_state", "TERMINATED");
+        writeMemory(pcb->memoryEnd + 1, "PCB_state", "TERMINATED");
         return;
     }
 
@@ -38,6 +38,7 @@ void executeInstruction(const char *instruction, PCB *pcb)
     }
     else if (strncmp(instruction, "assign ", 7) == 0)
     {
+        printf("Assigning...\n");
         handleAssign(instruction + 7, pcb->memoryEnd + 1);
     }
     else if (strncmp(instruction, "semWait ", 8) == 0)
@@ -72,7 +73,7 @@ void executeInstruction(const char *instruction, PCB *pcb)
         // Save the updated PC to memory
         char buffer[50];
         sprintf(buffer, "%d", pcb->programCounter);
-        writeMemory(pcb->memoryStart + 13, "PCB_pc", buffer);
+        writeMemory(pcb->memoryEnd + 4, "PCB_pc", buffer);
     }
 }
 

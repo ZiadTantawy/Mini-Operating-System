@@ -59,9 +59,9 @@ void scheduleFCFS_OneStep()
         return;
 
     updateState(&runningPCB, RUNNING);
-    int pcbMemoryStartIndex = runningPCB.memoryStart;
+    int pcbMemoryEndIndex = runningPCB.memoryEnd + 1;
 
-    interpret(&runningPCB, pcbMemoryStartIndex);
+    interpret(&runningPCB, pcbMemoryEndIndex);
     printMemory(clockCycle++);
 
     if (runningPCB.state == TERMINATED)
