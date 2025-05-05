@@ -23,7 +23,7 @@ int allocateProcessMemory(const char* filename){
         line[strcspn(line, "\n")] = 0;
         char instructionName[50];
         sprintf(instructionName, "instruction%d", instructionIndex++);
-        writeMemory(next_free, instructionName, line);
+        writeMemory(next_free++, instructionName, line);
     }
     fclose(file);
     return startIndex;
