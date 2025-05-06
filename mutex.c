@@ -68,23 +68,21 @@ void semSignal(Mutex *mutex)
     }
 
     mutex->isLocked = 0;
-    mutex->owner = NULL;
+    mutex->owner = NULL;  // Reset owner immediately
 
     if (!isEmpty(&mutex->blockedQueue))
     {
         // Unblock the next waiting process
-        PCB unblockedPCB = dequeue(&mutex->blockedQueue); // Dequeue one PCB
-
+        PCB unblockedPCB = dequeue(&mutex->blockedQueue);
         unblockedPCB.state = READY;
-        enqueue(&readyQueue, unblockedPCB); // Move to readyQueue
-
+        enqueue(&readyQueue, unblockedPCB);
+        
         printf("Process %d unblocked and moved to READY queue.\n", unblockedPCB.pid);
 
-        // Lock mutex again for the new owner
-        mutex->isLocked = 1;
-        mutex->owner = &unblockedPCB; // Point to new owner (note: be cautious here if needed)
+        // DO NOT set mutex->owner here! Let the process acquire it normally
+        // when it runs next via semWait
 
-        // Remove from global blockedQueue manually
+        // Remove from global blockedQueue
         PCBQueue tempQueue;
         initQueue(&tempQueue);
 
@@ -93,11 +91,10 @@ void semSignal(Mutex *mutex)
             PCB temp = dequeue(&blockedQueue);
             if (temp.pid != unblockedPCB.pid)
             {
-                enqueue(&tempQueue, temp); // Keep other blocked processes
+                enqueue(&tempQueue, temp);
             }
         }
 
-        // Restore tempQueue back to blockedQueue
         while (!isEmpty(&tempQueue))
         {
             enqueue(&blockedQueue, dequeue(&tempQueue));
