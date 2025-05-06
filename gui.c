@@ -230,33 +230,13 @@ void update_gui(AppWidgets *w)
 }
 
 // Callback for step button
-// void on_step_button_clicked(GtkButton *button, gpointer user_data) {
-//     scheduleOneCycle();
-//     update_gui(&widgets);
-//     add_log_message("Executed one clock cycle");
-// }
-
-// // Callback for start button
-// void on_start_button_clicked(GtkButton *button, gpointer user_data) {
-//     if (!widgets.is_running) {
-//         widgets.is_running = TRUE;
-//         widgets.timer_id = g_timeout_add(1000, (GSourceFunc)on_step_button_clicked, NULL);
-//         add_log_message("Started automatic execution");
-//     }
-// }
-
-// New step and start buttons clicked
-//  Shared helper to perform one clock cycle and update UI
-// void perform_one_cycle()
-// {
-//     scheduleOneCycle();
-//     update_gui(&widgets);
-//     add_log_message("Executed one clock cycle");
-// }
-
 void on_step_button_clicked(GtkButton *button, gpointer user_data)
 {
     scheduleOneInstruction();
+    
+    // Increment clock cycle after each instruction execution
+    clockCycle++;
+    
     update_gui(&widgets);
     add_log_message("Executed one instruction");
 }
@@ -265,9 +245,13 @@ void on_step_button_clicked(GtkButton *button, gpointer user_data)
 gboolean auto_execute(gpointer data)
 {
     scheduleFullProcess();
+    
+    // Increment clock cycle after each full process execution
+    clockCycle++;
+    
     update_gui(&widgets);
 
-    if (isEmpty(&readyQueue))
+    if (isEmpty(&readyQueue) && runningPCB.pid == 0)
     {
         add_log_message("No more processes. Stopping.");
         widgets.is_running = FALSE;
@@ -364,20 +348,83 @@ void initialize_gui(int *argc, char ***argv)
     widgets.notebook = gtk_notebook_new();
     gtk_container_add(GTK_CONTAINER(widgets.window), widgets.notebook);
 
-    // ========== Dashboard Tab ==========
-    GtkWidget *dashboard = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_notebook_append_page(GTK_NOTEBOOK(widgets.notebook), dashboard, gtk_label_new("Dashboard"));
+    // ========== Dashboard & Control Panel Tab ==========
+    GtkWidget *dashboard = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_notebook_append_page(GTK_NOTEBOOK(widgets.notebook), dashboard, gtk_label_new("Dashboard & Control"));
 
-    // Overview section
-    GtkWidget *overview_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    // Top section - split into two columns
+    GtkWidget *top_section = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_box_pack_start(GTK_BOX(dashboard), top_section, FALSE, FALSE, 5);
+
+    // Left column - Overview info
+    GtkWidget *overview_frame = gtk_frame_new("System Status");
+    GtkWidget *overview_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(overview_frame), overview_box);
+
     widgets.clock_cycle_label = gtk_label_new("Clock Cycle: 0");
     widgets.algorithm_label = gtk_label_new("Algorithm: First Come First Serve");
-    gtk_box_pack_start(GTK_BOX(overview_box), widgets.clock_cycle_label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(overview_box), widgets.algorithm_label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(dashboard), overview_box, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(overview_box), widgets.clock_cycle_label, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(overview_box), widgets.algorithm_label, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(top_section), overview_frame, TRUE, TRUE, 0);
+
+    // Right column - Control panel
+    GtkWidget *control_frame = gtk_frame_new("Control Panel");
+    GtkWidget *control_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(control_frame), control_box);
+
+    // Algorithm selection
+    GtkWidget *algo_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    GtkWidget *algo_label = gtk_label_new("Algorithm:");
+    widgets.algorithm_combo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "First Come First Serve");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "Round Robin");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "Multilevel Feedback Queue");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(widgets.algorithm_combo), 0);
+    g_signal_connect(widgets.algorithm_combo, "changed", G_CALLBACK(on_algorithm_changed), NULL);
+
+    // Quantum adjustment
+    GtkWidget *quantum_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    GtkWidget *quantum_label = gtk_label_new("Quantum:");
+    widgets.quantum_spin = gtk_spin_button_new_with_range(1, 10, 1);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widgets.quantum_spin), quantumNumber);
+    g_signal_connect(widgets.quantum_spin, "value-changed", G_CALLBACK(on_quantum_changed), NULL);
+
+    // Control buttons
+    GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    widgets.start_button = gtk_button_new_with_label("Start");
+    widgets.stop_button = gtk_button_new_with_label("Stop");
+    widgets.reset_button = gtk_button_new_with_label("Reset");
+    widgets.step_button = gtk_button_new_with_label("Step");
+
+    g_signal_connect(widgets.start_button, "clicked", G_CALLBACK(on_start_button_clicked), NULL);
+    g_signal_connect(widgets.stop_button, "clicked", G_CALLBACK(on_stop_button_clicked), NULL);
+    g_signal_connect(widgets.reset_button, "clicked", G_CALLBACK(on_reset_button_clicked), NULL);
+    g_signal_connect(widgets.step_button, "clicked", G_CALLBACK(on_step_button_clicked), NULL);
+
+    // Pack algorithm selection
+    gtk_box_pack_start(GTK_BOX(algo_box), algo_label, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(algo_box), widgets.algorithm_combo, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(control_box), algo_box, FALSE, FALSE, 5);
+
+    // Pack quantum spinner
+    gtk_box_pack_start(GTK_BOX(quantum_box), quantum_label, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(quantum_box), widgets.quantum_spin, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(control_box), quantum_box, FALSE, FALSE, 5);
+
+    // Pack buttons
+    gtk_box_pack_start(GTK_BOX(button_box), widgets.start_button, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(button_box), widgets.stop_button, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(button_box), widgets.reset_button, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(button_box), widgets.step_button, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(control_box), button_box, FALSE, FALSE, 5);
+
+    // Add the control frame to the top section
+    gtk_box_pack_start(GTK_BOX(top_section), control_frame, TRUE, TRUE, 0);
 
     // Process list (using tree view)
+    GtkWidget *process_frame = gtk_frame_new("Process List");
     GtkWidget *process_scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_size_request(process_scroll, -1, 200);  // Set minimum height
     widgets.process_list = gtk_tree_view_new();
 
     // Create columns
@@ -414,9 +461,11 @@ void initialize_gui(int *argc, char ***argv)
     g_object_unref(store);
 
     gtk_container_add(GTK_CONTAINER(process_scroll), widgets.process_list);
-    gtk_box_pack_start(GTK_BOX(dashboard), process_scroll, TRUE, TRUE, 0);
+    gtk_container_add(GTK_CONTAINER(process_frame), process_scroll);
+    gtk_box_pack_start(GTK_BOX(dashboard), process_frame, TRUE, TRUE, 5);
 
     // Queue section
+    GtkWidget *queue_frame = gtk_frame_new("Queues");
     GtkWidget *queue_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     widgets.ready_queue = gtk_label_new("Ready Queue: Empty");
     widgets.blocked_queue = gtk_label_new("Blocked Queue: Empty");
@@ -425,55 +474,8 @@ void initialize_gui(int *argc, char ***argv)
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.ready_queue, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.blocked_queue, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.running_process, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(dashboard), queue_box, FALSE, FALSE, 0);
-
-    // ========== Control Panel Tab ==========
-    GtkWidget *control_panel = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_notebook_append_page(GTK_NOTEBOOK(widgets.notebook), control_panel, gtk_label_new("Control Panel"));
-
-    // Algorithm selection
-    GtkWidget *algo_frame = gtk_frame_new("Scheduling Algorithm");
-    GtkWidget *algo_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_container_add(GTK_CONTAINER(algo_frame), algo_box);
-
-    widgets.algorithm_combo = gtk_combo_box_text_new();
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "First Come First Serve");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "Round Robin");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widgets.algorithm_combo), "Multilevel Feedback Queue");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widgets.algorithm_combo), 0);
-    g_signal_connect(widgets.algorithm_combo, "changed", G_CALLBACK(on_algorithm_changed), NULL);
-
-    // Quantum adjustment (only for RR)
-    GtkWidget *quantum_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-    GtkWidget *quantum_label = gtk_label_new("Quantum:");
-    widgets.quantum_spin = gtk_spin_button_new_with_range(1, 10, 1);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widgets.quantum_spin), quantumNumber);
-    g_signal_connect(widgets.quantum_spin, "value-changed", G_CALLBACK(on_quantum_changed), NULL);
-
-    gtk_box_pack_start(GTK_BOX(quantum_box), quantum_label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(quantum_box), widgets.quantum_spin, FALSE, FALSE, 0);
-
-    gtk_box_pack_start(GTK_BOX(algo_box), widgets.algorithm_combo, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(algo_box), quantum_box, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(control_panel), algo_frame, FALSE, FALSE, 0);
-
-    // Control buttons
-    GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-    widgets.start_button = gtk_button_new_with_label("Start");
-    widgets.stop_button = gtk_button_new_with_label("Stop");
-    widgets.reset_button = gtk_button_new_with_label("Reset");
-    widgets.step_button = gtk_button_new_with_label("Step");
-
-    g_signal_connect(widgets.start_button, "clicked", G_CALLBACK(on_start_button_clicked), NULL);
-    g_signal_connect(widgets.stop_button, "clicked", G_CALLBACK(on_stop_button_clicked), NULL);
-    g_signal_connect(widgets.reset_button, "clicked", G_CALLBACK(on_reset_button_clicked), NULL);
-    g_signal_connect(widgets.step_button, "clicked", G_CALLBACK(on_step_button_clicked), NULL);
-
-    gtk_box_pack_start(GTK_BOX(button_box), widgets.start_button, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(button_box), widgets.stop_button, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(button_box), widgets.reset_button, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(button_box), widgets.step_button, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(control_panel), button_box, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(queue_frame), queue_box);
+    gtk_box_pack_start(GTK_BOX(dashboard), queue_frame, FALSE, FALSE, 5);
 
     // ========== Resource Panel Tab ==========
     GtkWidget *resource_panel = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);

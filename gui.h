@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "mutex.h"
 #include "queue.h"
+
 // Global GTK widgets
 typedef struct {
     GtkWidget *window;
@@ -47,8 +48,23 @@ typedef struct {
     gboolean is_running;
 } AppWidgets;
 
+// Function prototypes
 void initialize_gui(int *argc, char ***argv);
 void update_gui(AppWidgets *widgets);
 void add_log_message(const char *message);
+void update_process_list(AppWidgets *w);
+void update_queues(AppWidgets *w);
+void update_mutex_status(AppWidgets *w);
+void update_memory_view(AppWidgets *w);
 
-#endif
+// Callback function prototypes
+void on_step_button_clicked(GtkButton *button, gpointer user_data);
+void on_start_button_clicked(GtkButton *button, gpointer user_data);
+void on_stop_button_clicked(GtkButton *button, gpointer user_data);
+void on_reset_button_clicked(GtkButton *button, gpointer user_data);
+void on_algorithm_changed(GtkComboBox *combo, gpointer user_data);
+void on_quantum_changed(GtkSpinButton *spin, gpointer user_data);
+void on_add_process_clicked(GtkButton *button, gpointer user_data);
+gboolean auto_execute(gpointer data);
+
+#endif /* GUI_H */
