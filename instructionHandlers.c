@@ -20,8 +20,6 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
     // Search for the variable memory slot
     for (int i = pcbMemoryEndIndex - 3; i < pcbMemoryEndIndex - 1; i++)
     {
-        printf("Memory Name : %s", memory[i].name);
-        printf("Variable Name:  %s\n", varName);
         if (strcmp(memory[i].name, varName) == 0 || strcmp(memory[i].name, "") == 0)
         {
             if (strcmp(value, "input") == 0)
@@ -63,7 +61,7 @@ void handleAssign(const char *params, int pcbMemoryEndIndex)
             return;
         }
     }
-    printf("Variable %s not found or no space!\n", varName);
+    add_log_message(("Variable %s not found or no space!\n", varName));
 }
 
 void handlePrint(const char *varName, int pcbMemoryEndIndex)
@@ -72,11 +70,11 @@ void handlePrint(const char *varName, int pcbMemoryEndIndex)
     {
         if (strcmp(memory[i].name, varName) == 0)
         {
-            printf("%s = %s\n", varName, memory[i].data);
+            add_log_message(("%s = %s\n", varName, memory[i].data));
             return;
         }
     }
-    printf("Variable %s not found!\n", varName);
+    add_log_message("Variable %s not found!\n", varName);
 }
 
 void handleSemWait(const char *resourceName, PCB *pcb)
@@ -95,7 +93,7 @@ void handleSemWait(const char *resourceName, PCB *pcb)
     }
     else
     {
-        printf("Unknown resource in semWait: %s\n", resourceName);
+        add_log_message("Unknown resource in semWait: %s\n", resourceName);
     }
 
     // If the process got BLOCKED, update memory too
@@ -121,7 +119,7 @@ void handleSemSignal(const char *resourceName)
     }
     else
     {
-        printf("Unknown resource in semSignal: %s\n", resourceName);
+        add_log_message("Unknown resource in semSignal: %s\n", resourceName);
     }
 }
 
@@ -129,7 +127,6 @@ void handlePrintFromTo(const char *params, int pcbEndIndex)
 {
     char var1[50], var2[50];
     sscanf(params, "%s %s", var1, var2);
-
     int a = -1, b = -1;
 
     for (int i = pcbEndIndex - 3; i < pcbEndIndex - 1; i++)
@@ -146,15 +143,14 @@ void handlePrintFromTo(const char *params, int pcbEndIndex)
 
     if (a == -1 || b == -1)
     {
-        printf("Variables for printFromTo not found!\n");
+        add_log_message("Variables for printFromTo not found!\n");
         return;
     }
 
     for (int i = a; i <= b; i++)
     {
-        printf("%d ", i);
+        add_log_message("%d ", i);
     }
-    printf("\n");
 }
 
 void handleWriteFile(const char *params)
@@ -165,13 +161,13 @@ void handleWriteFile(const char *params)
     FILE *fp = fopen(filename, "w");
     if (fp == NULL)
     {
-        printf("Error opening file %s for writing.\n", filename);
+        add_log_message("Error opening file %s for writing.\n", filename);
         return;
     }
     fprintf(fp, "%s", data);
     fclose(fp);
 
-    printf("Data written to file %s successfully.\n", filename);
+    add_log_message("Data written to file %s successfully.\n", filename);
 }
 
 void handleReadFile(const char *filename, int pcbMemoryEndIndex)
@@ -179,7 +175,7 @@ void handleReadFile(const char *filename, int pcbMemoryEndIndex)
     FILE *fp = fopen(filename, "r");
     if (fp == NULL)
     {
-        printf("Error opening file %s for reading.\n", filename);
+        add_log_message("Error opening file %s for reading.\n", filename);
         return;
     }
 
@@ -194,9 +190,9 @@ void handleReadFile(const char *filename, int pcbMemoryEndIndex)
         {
             strcpy(memory[i].name, "fileData");
             strcpy(memory[i].data, data);
-            printf("File data saved into memory.\n");
+            add_log_message("File data saved into memory.\n");
             return;
         }
     }
-    printf("No free space to save file data.\n");
+    add_log_message("No free space to save file data.\n");
 }

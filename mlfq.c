@@ -44,20 +44,20 @@ void initializeMlfqQueues()
     initQueue(&priority2Queue);
     initQueue(&priority3Queue);
     initQueue(&priority4Queue);
-    
+
     // Transfer processes from ready queue to priority queues
     PCBQueue tempQueue;
     initQueue(&tempQueue);
-    
+
     printf("[MLFQ INIT] Moving processes from ready queue to priority queues\n");
-    
+
     // First, move all processes to a temporary queue
     while (!isEmpty(&readyQueue))
     {
         PCB pcb = dequeue(&readyQueue);
         enqueue(&tempQueue, pcb);
     }
-    
+
     // Then, move from temporary queue to priority 1 queue
     while (!isEmpty(&tempQueue))
     {
@@ -66,7 +66,7 @@ void initializeMlfqQueues()
         printf("[MLFQ INIT] PID %d moved to priority queue 1\n", pcb.pid);
         enqueue(&priority1Queue, pcb);
     }
-    
+
     queuesInitialized = 1;
 }
 
@@ -75,89 +75,14 @@ void scheduleMLFQ()
     if (!queuesInitialized)
         initializeMlfqQueues();
 
-    printf("[MLFQ] Queue status: Q1:%s Q2:%s Q3:%s Q4:%s\n",
-           isEmpty(&priority1Queue) ? "empty" : "non-empty",
-           isEmpty(&priority2Queue) ? "empty" : "non-empty",
-           isEmpty(&priority3Queue) ? "empty" : "non-empty",
-           isEmpty(&priority4Queue) ? "empty" : "non-empty");
-
-    if (runningPCB.pid == 0 || runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
+    while (
+        !isEmpty(&priority1Queue) ||
+        !isEmpty(&priority2Queue) ||
+        !isEmpty(&priority3Queue) ||
+        !isEmpty(&priority4Queue) ||
+        runningPCB.pid != 0)
     {
-        for (int i = 0; i < mlfqQueueCount; i++)
-        {
-            PCBQueue *q = NULL;
-            switch (i)
-            {
-            case 0: q = &priority1Queue; break;
-            case 1: q = &priority2Queue; break;
-            case 2: q = &priority3Queue; break;
-            case 3: q = &priority4Queue; break;
-            }
-
-            if (!isEmpty(q))
-            {
-                runningPCB = dequeue(q);
-                runningPCB.state = RUNNING;
-                currentQueueLevel = i;
-                mlfqTimeSliceCounter = 0;
-                printf("[MLFQ] PID %d dequeued from priority queue %d\n", runningPCB.pid, i + 1);
-                break;
-            }
-        }
-
-        if (runningPCB.pid == 0)
-        {
-            printf("[MLFQ] No runnable processes\n");
-            return;
-        }
-    }
-
-    int timeQuantum = quantumNumber;
-    printf("[MLFQ] PID %d executing with time quantum %d at level %d\n",
-           runningPCB.pid, timeQuantum, currentQueueLevel + 1);
-
-    while (mlfqTimeSliceCounter < timeQuantum)
-    {
-        interpret(&runningPCB, runningPCB.memoryEnd + 1);
-        mlfqTimeSliceCounter++;
-        printf("[MLFQ] PID %d executed instruction. Time slice: %d/%d\n",
-               runningPCB.pid, mlfqTimeSliceCounter, timeQuantum);
-
-        if (runningPCB.state == TERMINATED)
-        {
-            printf("[MLFQ] PID %d terminated.\n", runningPCB.pid);
-            runningPCB.pid = 0;
-            mlfqTimeSliceCounter = 0;
-            return;
-        }
-        else if (runningPCB.state == BLOCKED)
-        {
-            printf("[MLFQ] PID %d blocked.\n", runningPCB.pid);
-            runningPCB.pid = 0;
-            mlfqTimeSliceCounter = 0;
-            return;
-        }
-    }
-
-    if (runningPCB.state == RUNNING)
-    {
-        int nextLevel = currentQueueLevel < mlfqQueueCount - 1 ? currentQueueLevel + 1 : currentQueueLevel;
-        PCBQueue *targetQueue = NULL;
-        switch (nextLevel)
-        {
-        case 0: targetQueue = &priority1Queue; break;
-        case 1: targetQueue = &priority2Queue; break;
-        case 2: targetQueue = &priority3Queue; break;
-        case 3: targetQueue = &priority4Queue; break;
-        }
-
-        runningPCB.state = READY;
-        runningPCB.priority = nextLevel + 1;
-        enqueue(targetQueue, runningPCB);
-        printf("[MLFQ] PID %d used full quantum, demoted to queue %d\n",
-               runningPCB.pid, nextLevel + 1);
-        runningPCB.pid = 0;
-        mlfqTimeSliceCounter = 0;
+        scheduleMLFQ_OneStep();
     }
 }
 
@@ -190,10 +115,18 @@ void scheduleMLFQ_OneStep()
             PCBQueue *q = NULL;
             switch (i)
             {
-            case 0: q = &priority1Queue; break;
-            case 1: q = &priority2Queue; break;
-            case 2: q = &priority3Queue; break;
-            case 3: q = &priority4Queue; break;
+            case 0:
+                q = &priority1Queue;
+                break;
+            case 1:
+                q = &priority2Queue;
+                break;
+            case 2:
+                q = &priority3Queue;
+                break;
+            case 3:
+                q = &priority4Queue;
+                break;
             }
             if (!isEmpty(q))
             {
@@ -238,10 +171,18 @@ void scheduleMLFQ_OneStep()
         PCBQueue *q = NULL;
         switch (nextLevel)
         {
-        case 0: q = &priority1Queue; break;
-        case 1: q = &priority2Queue; break;
-        case 2: q = &priority3Queue; break;
-        case 3: q = &priority4Queue; break;
+        case 0:
+            q = &priority1Queue;
+            break;
+        case 1:
+            q = &priority2Queue;
+            break;
+        case 2:
+            q = &priority3Queue;
+            break;
+        case 3:
+            q = &priority4Queue;
+            break;
         }
         runningPCB.state = READY;
         runningPCB.priority = nextLevel + 1;
