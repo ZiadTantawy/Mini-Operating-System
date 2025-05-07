@@ -67,5 +67,6 @@ void on_algorithm_changed(GtkComboBox *combo, gpointer user_data);
 void on_quantum_changed(GtkSpinButton *spin, gpointer user_data);
 void on_add_process_clicked(GtkButton *button, gpointer user_data);
 gboolean auto_execute(gpointer data);
+extern AppWidgets widgets;
 
 #endif /* GUI_H */

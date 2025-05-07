@@ -7,6 +7,7 @@
 
 void scheduleFCFS_OneStep()
 {
+    checkDelayedQueue();
     // If no process is currently running, fetch one from the queue
     if (runningPCB.pid == 0 || runningPCB.state == TERMINATED)
     {

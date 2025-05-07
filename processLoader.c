@@ -5,6 +5,7 @@
 #include "processLoader.h"
 #include "queue.h"
 #include "scheduler.h"
+#include "gui.h"
 
 int allocateProcessMemory(const char *filename)
 {
@@ -77,9 +78,45 @@ int loadProcess(const char *filename, int pid)
     reserveVariables();
     int endIndex = next_free - 1;
 
-    PCB pcb = createPCB(pid, startIndex, endIndex, 1);
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    GtkWidget *label;
+    int activationTime = 0;
+
+    dialog = gtk_dialog_new_with_buttons("Input Time",
+                                         GTK_WINDOW(widgets.window),
+                                         GTK_DIALOG_MODAL,
+                                         "_OK", GTK_RESPONSE_ACCEPT,
+                                         NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    label = gtk_label_new("Enter the clock cycle to enqueue the process:");
+    entry = gtk_entry_new();
+
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+        const char *input = gtk_entry_get_text(GTK_ENTRY(entry));
+        activationTime = atoi(input); // You might want more validation
+        add_log_message(g_strdup_printf("[LOADER] User entered clock cycle %d for PID %d", activationTime, pid));
+    }
+    else
+    {
+        add_log_message("[LOADER] Process scheduling cancelled by user.");
+        gtk_widget_destroy(dialog);
+        return -1; // user cancelled
+    }
+
+    gtk_widget_destroy(dialog);
+
+    PCB pcb = createPCB(pid, startIndex, endIndex, NEW, activationTime);
     savePCB(pcb);
-    enqueue(&readyQueue, pcb); // Enqueue the PCB to the ready queue
+
+    enqueue(&delayedQueue, pcb); // Enqueue the PCB to the ready queue
 
     return startIndex;
 }

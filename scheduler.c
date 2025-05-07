@@ -9,6 +9,7 @@
 SchedulingAlgorithm currentAlgorithm = FCFS;
 PCBQueue readyQueue;
 PCBQueue blockedQueue;
+PCBQueue delayedQueue;
 int quantumNumber = 2; // Default quantum
 int clockCycle = 0;    // Global clock cycle counter
 PCB runningPCB = {0};  // Global currently executing process
@@ -25,6 +26,7 @@ void initSchedulers()
 {
     initQueue(&readyQueue);
     initQueue(&blockedQueue);
+    initQueue(&delayedQueue);
     clockCycle = 0;
 }
 
@@ -34,24 +36,6 @@ void setSchedulingAlgorithm(SchedulingAlgorithm algo)
     currentAlgorithm = algo;
 }
 
-// // Execute one clock cycle
-// void scheduleOneCycle()
-// {
-//     switch (currentAlgorithm)
-//     {
-//     case FCFS:
-//         scheduleFCFS();
-//         break;
-//     case RR:
-//         scheduleRR();
-//         break;
-//     case MLFQ:
-//         scheduleMLFQ();
-//         break;
-//     }
-// }
-
-// Executes one instruction (for Step button)
 void scheduleOneInstruction()
 {
     switch (currentAlgorithm)
@@ -86,26 +70,51 @@ void scheduleFullProcess()
 }
 
 // Replace the static quantum declaration with a getter/setter
-void setQuantumNumber(int quantum) {
-    if (currentAlgorithm == RR) {
+void setQuantumNumber(int quantum)
+{
+    if (currentAlgorithm == RR)
+    {
         quantumNumber = quantum;
     }
 }
 
-int getQuantumNumber() {
+int getQuantumNumber()
+{
     return quantumNumber;
 }
 
-void updateProcessState(PCB *pcb, ProcessState newState) {
+void updateProcessState(PCB *pcb, ProcessState newState)
+{
     pcb->state = newState;
-    pcb->queueEntryTime = clockCycle;  // Reset queue time on state change
-    
+    pcb->queueEntryTime = clockCycle; // Reset queue time on state change
+
     // Update current instruction
     char *currentInstr = fetchInstruction(pcb->memoryEnd);
-    if (currentInstr) {
+    if (currentInstr)
+    {
         strncpy(pcb->currentInstruction, currentInstr, 99);
         pcb->currentInstruction[99] = '\0';
-    } else {
+    }
+    else
+    {
         strcpy(pcb->currentInstruction, "None");
+    }
+}
+void checkDelayedQueue()
+{
+    int count = sizeof(&delayedQueue);
+    for (int i = 0; i < count; i++)
+    {
+        PCB dpcb = dequeue(&delayedQueue);
+        if (dpcb.queueEntryTime <= clockCycle)
+        {
+            dpcb.state = READY;
+            enqueue(&readyQueue, dpcb);
+            printf("[DELAYED] PID %d moved to readyQueue at clock %d\n", dpcb.pid, clockCycle);
+        }
+        else
+        {
+            enqueue(&delayedQueue, dpcb); // Not yet time
+        }
     }
 }

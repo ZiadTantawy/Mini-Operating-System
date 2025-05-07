@@ -17,6 +17,7 @@ void scheduleRR()
 
 void scheduleRR_OneStep()
 {
+    checkDelayedQueue();
     if (runningPCB.pid == 0 || runningPCB.state == TERMINATED || runningPCB.state == BLOCKED)
     {
         if (!isEmpty(&readyQueue))

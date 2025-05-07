@@ -88,6 +88,7 @@ void scheduleMLFQ()
 
 void scheduleMLFQ_OneStep()
 {
+    checkDelayedQueue();
     if (!queuesInitialized)
         initializeMlfqQueues();
 

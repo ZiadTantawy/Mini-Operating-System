@@ -7,6 +7,7 @@
 // External declarations of global queues
 extern PCBQueue readyQueue;
 extern PCBQueue blockedQueue;
+extern PCBQueue delayedQueue;
 extern int quantumNumber;
 extern int clockCycle;
 extern PCBQueue priority1Queue;
@@ -40,6 +41,7 @@ void scheduleFCFS_OneStep();
 void scheduleRR_OneStep();
 void scheduleMLFQ_OneStep();
 void setQuantumNumber(int quantum);
+void checkDelayedQueue();
 int getQuantumNumber();
 
 #endif // SCHEDULER_H
