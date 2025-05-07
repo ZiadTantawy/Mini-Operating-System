@@ -68,7 +68,7 @@ void scheduleFCFS_OneStep()
     // Execute one instruction
     int pcbMemoryEndIndex = runningPCB.memoryEnd + 1;
     interpret(&runningPCB, pcbMemoryEndIndex);
-    printMemory(clockCycle++);
+    // printMemory(clockCycle++);
 
     // Handle state transitions
     if (runningPCB.state == TERMINATED)
