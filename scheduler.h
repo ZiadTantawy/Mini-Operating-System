@@ -41,5 +41,6 @@ void scheduleRR_OneStep();
 void scheduleMLFQ_OneStep();
 void setQuantumNumber(int quantum);
 int getQuantumNumber();
+int getQuantumForPriority(int priority);
 
 #endif // SCHEDULER_H
