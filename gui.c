@@ -1,6 +1,8 @@
 #include "gui.h"
 #include "queue.h"
 #include "processLoader.h"
+#include "interpreter.h"  // Add this include
+
 // Global widgets structure
 AppWidgets widgets;
 GtkTextBuffer *log_buffer;
@@ -86,20 +88,20 @@ void update_process_list(AppWidgets *w)
 }
 
 // Update queue displays
-void update_queues(AppWidgets *w)
-{
-    // Clear current displays
-    gtk_label_set_text(GTK_LABEL(w->ready_queue), "");
-    gtk_label_set_text(GTK_LABEL(w->blocked_queue), "");
-    gtk_label_set_text(GTK_LABEL(w->running_process), "");
-
+void update_queues(AppWidgets *w) {
     // Update ready queue
     GString *ready_str = g_string_new("Ready Queue:\n");
     Node *current = readyQueue.front;
-    while (current != NULL)
-    {
-        g_string_append_printf(ready_str, "PID: %d, Priority: %d\n",
-                               current->pcb.pid, current->pcb.priority);
+    while (current != NULL) {
+        char *instruction = fetchInstruction(current->pcb.memoryEnd);
+        int timeInQueue = clockCycle - current->pcb.queueEntryTime;
+        
+        g_string_append_printf(ready_str, 
+            "PID: %d | Instruction: %s | Time in Queue: %d\n",
+            current->pcb.pid,
+            instruction ? instruction : "None",
+            timeInQueue);
+            
         current = current->next;
     }
     gtk_label_set_text(GTK_LABEL(w->ready_queue), ready_str->str);
@@ -108,27 +110,33 @@ void update_queues(AppWidgets *w)
     // Update blocked queue
     GString *blocked_str = g_string_new("Blocked Queue:\n");
     current = blockedQueue.front;
-    while (current != NULL)
-    {
-        g_string_append_printf(blocked_str, "PID: %d, Priority: %d\n",
-                               current->pcb.pid, current->pcb.priority);
+    while (current != NULL) {
+        char *instruction = fetchInstruction(current->pcb.memoryEnd);
+        int timeInQueue = clockCycle - current->pcb.queueEntryTime;
+        
+        g_string_append_printf(blocked_str, 
+            "PID: %d | Instruction: %s | Time in Queue: %d\n",
+            current->pcb.pid,
+            instruction ? instruction : "None",
+            timeInQueue);
+            
         current = current->next;
     }
     gtk_label_set_text(GTK_LABEL(w->blocked_queue), blocked_str->str);
     g_string_free(blocked_str, TRUE);
 
-    // Update running process (simplified - in real implementation you'd track this)
-    if (!isEmpty(&readyQueue))
-    {
-        PCB *running = peek(&readyQueue);
-        if (running && running->state == RUNNING)
-        {
-            GString *running_str = g_string_new("");
-            g_string_append_printf(running_str, "Running Process:\nPID: %d\nPC: %d\nPriority: %d",
-                                   running->pid, running->programCounter, running->priority);
-            gtk_label_set_text(GTK_LABEL(w->running_process), running_str->str);
-            g_string_free(running_str, TRUE);
-        }
+    // Update running process
+    if (runningPCB.pid != 0) {
+        char *instruction = fetchInstruction(runningPCB.memoryEnd);
+        GString *running_str = g_string_new("Running Process:\n");
+        g_string_append_printf(running_str,
+            "PID: %d | Instruction: %s\n",
+            runningPCB.pid,
+            instruction ? instruction : "None");
+        gtk_label_set_text(GTK_LABEL(w->running_process), running_str->str);
+        g_string_free(running_str, TRUE);
+    } else {
+        gtk_label_set_text(GTK_LABEL(w->running_process), "Running Process: None");
     }
 }
 
@@ -303,15 +311,31 @@ void on_algorithm_changed(GtkComboBox *combo, gpointer user_data)
 {
     gint active = gtk_combo_box_get_active(combo);
     currentAlgorithm = (SchedulingAlgorithm)active;
+    
+    // Show/hide quantum spinner based on algorithm
+    if (currentAlgorithm == RR) {
+        gtk_widget_set_sensitive(widgets.quantum_spin, TRUE);
+        gtk_widget_set_visible(widgets.quantum_spin, TRUE);
+        gtk_widget_set_visible(gtk_widget_get_parent(widgets.quantum_spin), TRUE);
+    } else {
+        gtk_widget_set_sensitive(widgets.quantum_spin, FALSE);
+        gtk_widget_set_visible(widgets.quantum_spin, FALSE);
+        gtk_widget_set_visible(gtk_widget_get_parent(widgets.quantum_spin), FALSE);
+    }
+    
     update_gui(&widgets);
     add_log_message("Changed scheduling algorithm");
 }
 
-// Callback for quantum change
-void on_quantum_changed(GtkSpinButton *spin, gpointer user_data)
-{
-    quantumNumber = gtk_spin_button_get_value_as_int(spin);
-    add_log_message("Quantum changed");
+// Update the quantum change callback
+void on_quantum_changed(GtkSpinButton *spin, gpointer user_data) {
+    if (currentAlgorithm == RR) {
+        int newQuantum = gtk_spin_button_get_value_as_int(spin);
+        setQuantumNumber(newQuantum);
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Quantum changed to %d", getQuantumNumber());
+        add_log_message(msg);
+    }
 }
 
 // Callback for add process button
@@ -386,8 +410,13 @@ void initialize_gui(int *argc, char ***argv)
     GtkWidget *quantum_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     GtkWidget *quantum_label = gtk_label_new("Quantum:");
     widgets.quantum_spin = gtk_spin_button_new_with_range(1, 10, 1);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widgets.quantum_spin), quantumNumber);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(widgets.quantum_spin), 2); // Default value
     g_signal_connect(widgets.quantum_spin, "value-changed", G_CALLBACK(on_quantum_changed), NULL);
+    
+    // Initially hide quantum controls since FCFS is default
+    gtk_widget_set_sensitive(widgets.quantum_spin, FALSE);
+    gtk_widget_set_visible(widgets.quantum_spin, FALSE);
+    gtk_widget_set_visible(quantum_label, FALSE);
 
     // Control buttons
     GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);

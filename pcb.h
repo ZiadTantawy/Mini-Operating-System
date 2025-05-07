@@ -47,7 +47,12 @@ typedef struct PCB {
     int programCounter;
     int memoryStart;
     int memoryEnd;
+    char currentInstruction[100];
+    int queueEntryTime;
 } PCB;
+
+// Add external declaration for clockCycle
+extern int clockCycle;
 
 // Function declarations
 PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority);

@@ -39,5 +39,7 @@ void scheduleFullProcess();
 void scheduleFCFS_OneStep();
 void scheduleRR_OneStep();
 void scheduleMLFQ_OneStep();
+void setQuantumNumber(int quantum);
+int getQuantumNumber();
 
 #endif // SCHEDULER_H

@@ -27,20 +27,18 @@ int isEmpty(PCBQueue *q) {
 
 // Enqueue a PCB into the queue
 void enqueue(PCBQueue *q, PCB pcb) {
-    Node *current = (Node *)malloc(sizeof(Node));
-    if (current == NULL) {
-        printf("Memory allocation failed!\n");
+    Node *newNode = (Node *)malloc(sizeof(Node));
+    newNode->pcb = pcb;
+    newNode->pcb.queueEntryTime = clockCycle;  // Record entry time
+    newNode->next = NULL;
+    
+    if (q->rear == NULL) {
+        q->front = q->rear = newNode;
         return;
     }
-    current->pcb = pcb;
-    current->next = NULL;
-
-    if (q->rear == NULL) {
-        q->front = q->rear = current;
-    } else {
-        q->rear->next = current;
-        q->rear = current;
-    }
+    
+    q->rear->next = newNode;
+    q->rear = newNode;
 }
 
 // Dequeue a PCB from the queue -- **RETURN PCB VALUE NOT POINTER**

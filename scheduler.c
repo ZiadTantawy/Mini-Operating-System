@@ -1,8 +1,10 @@
 #include "scheduler.h" // Must be first
 #include "memory.h"    // For printMemory()
 #include <stdio.h>     // For printf()
+#include <string.h>    // For strncpy and strcpy
 #include "pcb.h"
 #include "queue.h"
+#include "interpreter.h" // For fetchInstruction
 
 SchedulingAlgorithm currentAlgorithm = FCFS;
 PCBQueue readyQueue;
@@ -80,5 +82,30 @@ void scheduleFullProcess()
     case MLFQ:
         scheduleMLFQ(); // Already full quantum
         break;
+    }
+}
+
+// Replace the static quantum declaration with a getter/setter
+void setQuantumNumber(int quantum) {
+    if (currentAlgorithm == RR) {
+        quantumNumber = quantum;
+    }
+}
+
+int getQuantumNumber() {
+    return quantumNumber;
+}
+
+void updateProcessState(PCB *pcb, ProcessState newState) {
+    pcb->state = newState;
+    pcb->queueEntryTime = clockCycle;  // Reset queue time on state change
+    
+    // Update current instruction
+    char *currentInstr = fetchInstruction(pcb->memoryEnd);
+    if (currentInstr) {
+        strncpy(pcb->currentInstruction, currentInstr, 99);
+        pcb->currentInstruction[99] = '\0';
+    } else {
+        strcpy(pcb->currentInstruction, "None");
     }
 }
