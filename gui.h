@@ -44,6 +44,10 @@ typedef struct
     GtkWidget *file_chooser;
     GtkWidget *add_process_button;
 
+    // MLFQ priority queues display
+    GtkWidget *mlfq_queues_frame;
+    GtkWidget *mlfq_queues;
+
     // Timer for auto execution
     guint timer_id;
     gboolean is_running;
