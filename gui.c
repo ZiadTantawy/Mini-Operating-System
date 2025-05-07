@@ -127,12 +127,23 @@ void update_queues(AppWidgets *w) {
 
     // Update running process
     if (runningPCB.pid != 0) {
-        char *instruction = fetchInstruction(runningPCB.memoryEnd);
+        char instructionName[50];
+        sprintf(instructionName, "instruction%d", runningPCB.programCounter);
+        
+        char *currentInstr = NULL;
+        for (int i = runningPCB.memoryStart; i <= runningPCB.memoryEnd; i++) {
+            if (strcmp(memory[i].name, instructionName) == 0) {
+                currentInstr = memory[i].data;
+                break;
+            }
+        }
+
         GString *running_str = g_string_new("Running Process:\n");
         g_string_append_printf(running_str,
-            "PID: %d | Instruction: %s\n",
+            "PID: %d | Instruction: %s | PC: %d\n",
             runningPCB.pid,
-            instruction ? instruction : "None");
+            currentInstr ? currentInstr : "None",
+            runningPCB.programCounter);
         gtk_label_set_text(GTK_LABEL(w->running_process), running_str->str);
         g_string_free(running_str, TRUE);
     } else {
