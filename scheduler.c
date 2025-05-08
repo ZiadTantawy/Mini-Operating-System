@@ -117,8 +117,9 @@ void checkDelayedQueue()
         PCB dpcb = dequeue(&delayedQueue);
 
         // Check activation time — NOT queueEntryTime!
-        if (dpcb.activationTime == clockCycle + 1)
+        if (dpcb.activationTime <= clockCycle + 1)
         {
+            printf("PCB activation Time is %d | Clock Cycle: %d\n", dpcb.activationTime, (clockCycle + 1));
             // Update state to READY
             dpcb.state = READY;
 

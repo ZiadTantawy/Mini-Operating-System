@@ -2,7 +2,6 @@
 #include "scheduler.h"
 #include "queue.h"
 #include "pcb.h"
- // To access readyQueue, blockedQueue
 
 // Mutex structure
 typedef struct Mutex
@@ -12,14 +11,15 @@ typedef struct Mutex
     PCBQueue blockedQueue; // Blocked queue for this resource
 } Mutex;
 
-// Mutex variables
+// Mutex instances
 Mutex userInputMutex;
 Mutex userOutputMutex;
 Mutex fileMutex;
 
-// Extern global queues
+// External global queues
 extern PCBQueue readyQueue;
 extern PCBQueue blockedQueue;
+extern PCB runningPCB;
 
 // Initialize all mutexes
 void initMutexes()
@@ -37,67 +37,75 @@ void initMutexes()
     initQueue(&fileMutex.blockedQueue);
 }
 
-// semWait function
+// semWait logic
 void semWait(Mutex *mutex, PCB *process)
 {
     if (mutex->isLocked == 0)
     {
-        // Mutex is free, acquire it
         mutex->isLocked = 1;
         mutex->owner = process;
         printf("Process %d acquired the mutex.\n", process->pid);
     }
     else
     {
-        // Mutex is already locked, block the process
         printf("Process %d is BLOCKED waiting for mutex.\n", process->pid);
         process->state = BLOCKED;
-
-        enqueue(&mutex->blockedQueue, *process); // Blocked at resource level
-        enqueue(&blockedQueue, *process);        // Also add to global blockedQueue
+        enqueue(&mutex->blockedQueue, *process);
+        enqueue(&blockedQueue, *process);
+        runningPCB.pid = 0; // Free the CPU
     }
 }
 
-// semSignal function
+// semSignal logic
 void semSignal(Mutex *mutex)
 {
     if (mutex->isLocked == 0)
     {
-        printf("Warning: semSignal called on unlocked mutex.\n");
+        printf("Warning: semSignal called on an unlocked mutex.\n");
         return;
     }
 
     mutex->isLocked = 0;
-    mutex->owner = NULL;  // Reset owner immediately
+    mutex->owner = NULL;
 
     if (!isEmpty(&mutex->blockedQueue))
     {
-        // Unblock the next waiting process
+        // Unblock the head of the blocked queue
         PCB unblockedPCB = dequeue(&mutex->blockedQueue);
-        unblockedPCB.state = READY;
-        enqueue(&readyQueue, unblockedPCB);
-        
-        printf("Process %d unblocked and moved to READY queue.\n", unblockedPCB.pid);
-
-        // DO NOT set mutex->owner here! Let the process acquire it normally
-        // when it runs next via semWait
 
         // Remove from global blockedQueue
-        PCBQueue tempQueue;
-        initQueue(&tempQueue);
+        PCBQueue temp;
+        initQueue(&temp);
 
         while (!isEmpty(&blockedQueue))
         {
-            PCB temp = dequeue(&blockedQueue);
-            if (temp.pid != unblockedPCB.pid)
+            PCB tempPCB = dequeue(&blockedQueue);
+            if (tempPCB.pid != unblockedPCB.pid)
             {
-                enqueue(&tempQueue, temp);
+                enqueue(&temp, tempPCB);
             }
         }
 
-        while (!isEmpty(&tempQueue))
+        while (!isEmpty(&temp))
         {
-            enqueue(&blockedQueue, dequeue(&tempQueue));
+            enqueue(&blockedQueue, dequeue(&temp));
+        }
+
+        // Grant mutex to unblocked process
+        mutex->isLocked = 1;
+        mutex->owner = &unblockedPCB;
+        unblockedPCB.state = READY;
+
+        if (runningPCB.pid == 0)
+        {
+            runningPCB = unblockedPCB;
+            runningPCB.state = RUNNING;
+            printf("Process %d immediately acquired mutex and is now RUNNING.\n", runningPCB.pid);
+        }
+        else
+        {
+            enqueue(&readyQueue, unblockedPCB);
+            printf("Process %d acquired mutex and moved to READY queue.\n", unblockedPCB.pid);
         }
     }
 }

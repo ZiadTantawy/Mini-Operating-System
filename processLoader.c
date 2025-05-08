@@ -115,8 +115,10 @@ int loadProcess(const char *filename, int pid)
 
     PCB pcb = createPCB(pid, startIndex, endIndex, 0, activationTime);
     savePCB(pcb);
-
-    enqueue(&delayedQueue, pcb); // Enqueue the PCB to the ready queue
+    if (activationTime == 0)
+        enqueue(&readyQueue, pcb); // Enqueue the PCB to the ready queue
+    else
+        enqueue(&delayedQueue, pcb); // Enqueue the PCB to the ready queue
 
     return startIndex;
 }

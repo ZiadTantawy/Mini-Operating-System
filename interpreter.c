@@ -4,6 +4,7 @@
 #include "instructionHandlers.h"
 #include <string.h>
 #include <stdlib.h>
+#include "scheduler.h" // For add_log_message
 char *fetchInstruction(int pcbEndIndex)
 {
     int pc = atoi(readMemory(pcbEndIndex + 3).data);
@@ -25,6 +26,16 @@ char *fetchInstruction(int pcbEndIndex)
 
 void executeInstruction(const char *instruction, PCB *pcb)
 {
+    if (pcb->state != BLOCKED && currentAlgorithm == MLFQ)
+    {
+        incrementPC(pcb);
+
+        // Save the updated PC to memory
+        char buffer[50];
+        sprintf(buffer, "%d", pcb->programCounter);
+        writeMemory(pcb->memoryEnd + 4, "PCB_pc", buffer);
+    }
+
     if (!instruction)
     {
         updateState(pcb, TERMINATED);
@@ -66,7 +77,7 @@ void executeInstruction(const char *instruction, PCB *pcb)
         printf("Unknown instruction: %s\n", instruction);
     }
 
-    if (pcb->state != BLOCKED)
+    if (pcb->state != BLOCKED && currentAlgorithm != MLFQ)
     {
         incrementPC(pcb);
 
