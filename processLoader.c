@@ -113,7 +113,7 @@ int loadProcess(const char *filename, int pid)
 
     gtk_widget_destroy(dialog);
 
-    PCB pcb = createPCB(pid, startIndex, endIndex, NEW, activationTime);
+    PCB pcb = createPCB(pid, startIndex, endIndex, 0, activationTime);
     savePCB(pcb);
 
     enqueue(&delayedQueue, pcb); // Enqueue the PCB to the ready queue

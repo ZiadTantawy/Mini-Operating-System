@@ -5,6 +5,7 @@
 #include "pcb.h"
 #include "queue.h"
 #include "interpreter.h" // For fetchInstruction
+#include "gui.h"         // For add_log_message
 
 SchedulingAlgorithm currentAlgorithm = FCFS;
 PCBQueue readyQueue;
@@ -102,19 +103,41 @@ void updateProcessState(PCB *pcb, ProcessState newState)
 }
 void checkDelayedQueue()
 {
-    int count = sizeof(&delayedQueue);
+    // Count the number of PCBs in the delayedQueue
+    int count = 0;
+    Node *current = delayedQueue.front;
+    while (current != NULL)
+    {
+        count++;
+        current = current->next;
+    }
+    // Process each PCB in the queue exactly once
     for (int i = 0; i < count; i++)
     {
         PCB dpcb = dequeue(&delayedQueue);
-        if (dpcb.queueEntryTime <= clockCycle)
+
+        // Check activation time — NOT queueEntryTime!
+        if (dpcb.activationTime == clockCycle + 1)
         {
+            // Update state to READY
             dpcb.state = READY;
+
+            // Update state in memory too
+            char stateBuffer[20];
+            sprintf(stateBuffer, "%s", stateToString(READY));
+            writeMemory(dpcb.memoryEnd + 2, "PCB_state", stateBuffer);
+
+            // Reset queue entry time
+            dpcb.queueEntryTime = clockCycle;
+
+            // Enqueue to ready queue
             enqueue(&readyQueue, dpcb);
-            printf("[DELAYED] PID %d moved to readyQueue at clock %d\n", dpcb.pid, clockCycle);
+            add_log_message("[DELAYED] PID %d moved to readyQueue at clock %d", dpcb.pid, clockCycle);
         }
         else
         {
             enqueue(&delayedQueue, dpcb); // Not yet time
         }
     }
+    update_gui(&widgets);
 }

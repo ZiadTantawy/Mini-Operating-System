@@ -4,20 +4,20 @@
 #include "interpreter.h" // For fetchInstruction
 #include "scheduler.h"   // For clockCycle
 
-PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority, int queueEntryTime)
+PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority, int activationTime)
 {
     PCB pcb;
     pcb.pid = pid;
-    pcb.state = READY;
+    pcb.state = NEW;
     pcb.priority = priority;
     pcb.programCounter = 0;
     pcb.memoryStart = memoryStart;
     pcb.memoryEnd = memoryEnd;
-    pcb.queueEntryTime = queueEntryTime;
+    pcb.activationTime = activationTime;
 
     // Initialize new fields
     pcb.currentInstruction[0] = '\0'; // Empty string
-    pcb.queueEntryTime = clockCycle;  // Current clock cycle
+    pcb.queueEntryTime = clockCycle;  // Set to current clock cycle
 
     // Update initial instruction
     char *firstInstr = fetchInstruction(memoryEnd);
@@ -71,6 +71,8 @@ const char *stateToString(ProcessState state)
 {
     switch (state)
     {
+    case NEW:
+        return "NEW";
     case READY:
         return "READY";
     case RUNNING:

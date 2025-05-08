@@ -1,15 +1,16 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include "pcb.h"  // For PCB definition
+#include "pcb.h" // For PCB definition
 
-
-typedef struct Node {
+typedef struct Node
+{
     PCB pcb;
     struct Node *next;
 } Node;
 // PCB Queue structure
-typedef struct {
+typedef struct
+{
     Node *front;
     Node *rear;
 } PCBQueue;
@@ -18,7 +19,8 @@ typedef struct {
 void initQueue(PCBQueue *q);
 int isEmpty(PCBQueue *q);
 void enqueue(PCBQueue *q, PCB pcb);
-PCB dequeue(PCBQueue *q);          // Returns by value
-PCB* peek(PCBQueue *q);           // Returns pointer to front PCB
+PCB dequeue(PCBQueue *q); // Returns by value
+PCB *peek(PCBQueue *q);
+void printQueue(PCBQueue *q);
 
 #endif // QUEUE_H

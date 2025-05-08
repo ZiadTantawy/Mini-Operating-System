@@ -28,7 +28,7 @@ void executeInstruction(const char *instruction, PCB *pcb)
     if (!instruction)
     {
         updateState(pcb, TERMINATED);
-        writeMemory(pcb->memoryEnd + 1, "PCB_state", "TERMINATED");
+        writeMemory(pcb->memoryEnd + 2, "PCB_state", "TERMINATED");
         return;
     }
 

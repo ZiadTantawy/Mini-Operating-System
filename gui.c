@@ -7,6 +7,9 @@
 AppWidgets widgets;
 GtkTextBuffer *log_buffer;
 
+// Add this near the top of the file, after the globals
+static int pid_counter = 1;
+
 // Function to add a message to the log
 void add_log_message(const char *format, ...)
 {
@@ -133,6 +136,25 @@ void update_queues(AppWidgets *w)
     gtk_label_set_text(GTK_LABEL(w->blocked_queue), blocked_str->str);
     g_string_free(blocked_str, TRUE);
 
+    // Update delayed queue
+    GString *delayed_str = g_string_new("Delayed Queue:\n");
+    current = delayedQueue.front;
+    while (current != NULL)
+    {
+        char *instruction = fetchInstruction(current->pcb.memoryEnd);
+        int activateAt = current->pcb.activationTime;
+
+        g_string_append_printf(delayed_str,
+                               "PID: %d | Activates at: %d | Instruction: %s\n",
+                               current->pcb.pid,
+                               activateAt,
+                               instruction ? instruction : "None");
+
+        current = current->next;
+    }
+    gtk_label_set_text(GTK_LABEL(w->delayed_queue), delayed_str->str);
+    g_string_free(delayed_str, TRUE);
+
     // Update running process
     if (runningPCB.pid != 0)
     {
@@ -168,13 +190,14 @@ void update_queues(AppWidgets *w)
     {
         // Create a new string for all MLFQ queues
         GString *mlfq_str = g_string_new("MLFQ Priority Queues:\n");
-        
+
         // Priority Queue 1 (highest priority)
         g_string_append(mlfq_str, "\nPriority Queue 1 (Highest): ");
         g_string_append_printf(mlfq_str, "[Quantum = %d]\n", getQuantumForPriority(1));
-        
+
         Node *current = priority1Queue.front;
-        if (current == NULL) {
+        if (current == NULL)
+        {
             g_string_append(mlfq_str, "  Empty\n");
         }
         while (current != NULL)
@@ -182,19 +205,20 @@ void update_queues(AppWidgets *w)
             char *instruction = fetchInstruction(current->pcb.memoryEnd);
             int timeInQueue = clockCycle - current->pcb.queueEntryTime;
             g_string_append_printf(mlfq_str,
-                                  "  PID: %d | Instr: %s | Wait: %d\n",
-                                  current->pcb.pid,
-                                  instruction ? instruction : "None",
-                                  timeInQueue);
+                                   "  PID: %d | Instr: %s | Wait: %d\n",
+                                   current->pcb.pid,
+                                   instruction ? instruction : "None",
+                                   timeInQueue);
             current = current->next;
         }
-        
+
         // Priority Queue 2
         g_string_append(mlfq_str, "\nPriority Queue 2: ");
         g_string_append_printf(mlfq_str, "[Quantum = %d]\n", getQuantumForPriority(2));
-        
+
         current = priority2Queue.front;
-        if (current == NULL) {
+        if (current == NULL)
+        {
             g_string_append(mlfq_str, "  Empty\n");
         }
         while (current != NULL)
@@ -202,19 +226,20 @@ void update_queues(AppWidgets *w)
             char *instruction = fetchInstruction(current->pcb.memoryEnd);
             int timeInQueue = clockCycle - current->pcb.queueEntryTime;
             g_string_append_printf(mlfq_str,
-                                  "  PID: %d | Instr: %s | Wait: %d\n",
-                                  current->pcb.pid,
-                                  instruction ? instruction : "None",
-                                  timeInQueue);
+                                   "  PID: %d | Instr: %s | Wait: %d\n",
+                                   current->pcb.pid,
+                                   instruction ? instruction : "None",
+                                   timeInQueue);
             current = current->next;
         }
-        
+
         // Priority Queue 3
         g_string_append(mlfq_str, "\nPriority Queue 3: ");
         g_string_append_printf(mlfq_str, "[Quantum = %d]\n", getQuantumForPriority(3));
-        
+
         current = priority3Queue.front;
-        if (current == NULL) {
+        if (current == NULL)
+        {
             g_string_append(mlfq_str, "  Empty\n");
         }
         while (current != NULL)
@@ -222,19 +247,20 @@ void update_queues(AppWidgets *w)
             char *instruction = fetchInstruction(current->pcb.memoryEnd);
             int timeInQueue = clockCycle - current->pcb.queueEntryTime;
             g_string_append_printf(mlfq_str,
-                                  "  PID: %d | Instr: %s | Wait: %d\n",
-                                  current->pcb.pid,
-                                  instruction ? instruction : "None",
-                                  timeInQueue);
+                                   "  PID: %d | Instr: %s | Wait: %d\n",
+                                   current->pcb.pid,
+                                   instruction ? instruction : "None",
+                                   timeInQueue);
             current = current->next;
         }
-        
+
         // Priority Queue 4 (lowest priority)
         g_string_append(mlfq_str, "\nPriority Queue 4 (Lowest): ");
         g_string_append_printf(mlfq_str, "[Quantum = %d]\n", getQuantumForPriority(4));
-        
+
         current = priority4Queue.front;
-        if (current == NULL) {
+        if (current == NULL)
+        {
             g_string_append(mlfq_str, "  Empty\n");
         }
         while (current != NULL)
@@ -242,28 +268,29 @@ void update_queues(AppWidgets *w)
             char *instruction = fetchInstruction(current->pcb.memoryEnd);
             int timeInQueue = clockCycle - current->pcb.queueEntryTime;
             g_string_append_printf(mlfq_str,
-                                  "  PID: %d | Instr: %s | Wait: %d\n",
-                                  current->pcb.pid,
-                                  instruction ? instruction : "None",
-                                  timeInQueue);
+                                   "  PID: %d | Instr: %s | Wait: %d\n",
+                                   current->pcb.pid,
+                                   instruction ? instruction : "None",
+                                   timeInQueue);
             current = current->next;
         }
-        
+
         // Current running info if applicable
-        if (runningPCB.pid != 0 && runningPCB.state == RUNNING) {
+        if (runningPCB.pid != 0 && runningPCB.state == RUNNING)
+        {
             int timeQuantum = getQuantumForPriority(currentQueueLevel + 1);
-            g_string_append_printf(mlfq_str, 
-                                  "\nRunning: PID %d at Level %d | Quantum: %d | Used: %d\n",
-                                  runningPCB.pid,
-                                  currentQueueLevel + 1, 
-                                  timeQuantum, 
-                                  mlfqTimeSliceCounter);
+            g_string_append_printf(mlfq_str,
+                                   "\nRunning: PID %d at Level %d | Quantum: %d | Used: %d\n",
+                                   runningPCB.pid,
+                                   currentQueueLevel + 1,
+                                   timeQuantum,
+                                   mlfqTimeSliceCounter);
         }
-        
+
         // Update the label
         gtk_label_set_text(GTK_LABEL(w->mlfq_queues), mlfq_str->str);
         g_string_free(mlfq_str, TRUE);
-        
+
         // Show the MLFQ queues frame
         gtk_widget_show_all(w->mlfq_queues_frame);
     }
@@ -427,7 +454,7 @@ void on_stop_button_clicked(GtkButton *button, gpointer user_data)
     }
 }
 
-// Callback for reset button
+// Modify the reset button callback:
 void on_reset_button_clicked(GtkButton *button, gpointer user_data)
 {
     // Reset all queues and memory
@@ -435,6 +462,9 @@ void on_reset_button_clicked(GtkButton *button, gpointer user_data)
     initializeMemory();
     initMutexes();
     clockCycle = 0;
+
+    // Reset PID counter
+    pid_counter = 1;
 
     update_gui(&widgets);
     add_log_message("System reset");
@@ -453,14 +483,15 @@ void on_algorithm_changed(GtkComboBox *combo, gpointer user_data)
         gtk_widget_set_sensitive(widgets.quantum_spin, TRUE);
         gtk_widget_set_visible(widgets.quantum_spin, TRUE);
         gtk_widget_set_visible(gtk_widget_get_parent(widgets.quantum_spin), TRUE);
-        
+
         // Update quantum label
         GtkWidget *quantum_label = gtk_bin_get_child(GTK_BIN(
             gtk_widget_get_parent(widgets.quantum_spin)));
-        if (GTK_IS_LABEL(quantum_label)) {
+        if (GTK_IS_LABEL(quantum_label))
+        {
             gtk_label_set_text(GTK_LABEL(quantum_label), "Quantum:");
         }
-        
+
         // Hide MLFQ queues
         gtk_widget_hide(widgets.mlfq_queues_frame);
     }
@@ -470,7 +501,7 @@ void on_algorithm_changed(GtkComboBox *combo, gpointer user_data)
         gtk_widget_set_sensitive(widgets.quantum_spin, FALSE);
         gtk_widget_set_visible(widgets.quantum_spin, FALSE);
         gtk_widget_set_visible(gtk_widget_get_parent(widgets.quantum_spin), FALSE);
-        
+
         // Show MLFQ queues
         gtk_widget_show_all(widgets.mlfq_queues_frame);
     }
@@ -480,15 +511,15 @@ void on_algorithm_changed(GtkComboBox *combo, gpointer user_data)
         gtk_widget_set_sensitive(widgets.quantum_spin, FALSE);
         gtk_widget_set_visible(widgets.quantum_spin, FALSE);
         gtk_widget_set_visible(gtk_widget_get_parent(widgets.quantum_spin), FALSE);
-        
+
         // Hide MLFQ queues
         gtk_widget_hide(widgets.mlfq_queues_frame);
     }
 
     update_gui(&widgets);
-    add_log_message("Changed scheduling algorithm to %s", 
-                   currentAlgorithm == FCFS ? "FCFS" : 
-                   currentAlgorithm == RR ? "Round Robin" : "MLFQ");
+    add_log_message("Changed scheduling algorithm to %s",
+                    currentAlgorithm == FCFS ? "FCFS" : currentAlgorithm == RR ? "Round Robin"
+                                                                               : "MLFQ");
 }
 
 // Update the quantum change callback
@@ -506,13 +537,12 @@ void on_quantum_changed(GtkSpinButton *spin, gpointer user_data)
     }
 }
 
-// Callback for add process button
+// Then modify the process addition function:
 void on_add_process_clicked(GtkButton *button, gpointer user_data)
 {
     gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widgets.file_chooser));
     if (filename)
     {
-        static int pid_counter = 1;
         int result = loadProcess(filename, pid_counter++);
         if (result != -1)
         {
@@ -667,12 +697,14 @@ void initialize_gui(int *argc, char ***argv)
     widgets.ready_queue = gtk_label_new("Ready Queue: Empty");
     widgets.blocked_queue = gtk_label_new("Blocked Queue: Empty");
     widgets.running_process = gtk_label_new("Running Process: None");
+    widgets.delayed_queue = gtk_label_new("Delayed Queue: Empty"); // Add this line
     widgets.mlfq_queues_frame = gtk_frame_new("MLFQ Queues");
     widgets.mlfq_queues = gtk_label_new("MLFQ Priority Queues: None");
     gtk_container_add(GTK_CONTAINER(widgets.mlfq_queues_frame), widgets.mlfq_queues);
 
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.ready_queue, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.blocked_queue, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(queue_box), widgets.delayed_queue, TRUE, TRUE, 0); // Add this line
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.running_process, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(queue_box), widgets.mlfq_queues_frame, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(queue_frame), queue_box);
@@ -681,8 +713,8 @@ void initialize_gui(int *argc, char ***argv)
     // MLFQ Priority Queues section (initially hidden)
     widgets.mlfq_queues_frame = gtk_frame_new("MLFQ Priority Queues");
     GtkWidget *mlfq_scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(mlfq_scroll), 
-                                   GTK_POLICY_AUTOMATIC, 
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(mlfq_scroll),
+                                   GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
     gtk_widget_set_size_request(mlfq_scroll, -1, 200); // Give it some height
 
@@ -695,11 +727,11 @@ void initialize_gui(int *argc, char ***argv)
     // Use a modern approach instead of deprecated gtk_widget_override_font
     GtkStyleContext *context = gtk_widget_get_style_context(widgets.mlfq_queues);
     GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider, 
-                                   "label { font-family: monospace; }", -1, NULL);
-    gtk_style_context_add_provider(context, 
-                                  GTK_STYLE_PROVIDER(provider), 
-                                  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_css_provider_load_from_data(provider,
+                                    "label { font-family: monospace; }", -1, NULL);
+    gtk_style_context_add_provider(context,
+                                   GTK_STYLE_PROVIDER(provider),
+                                   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
 
     gtk_container_add(GTK_CONTAINER(mlfq_scroll), widgets.mlfq_queues);

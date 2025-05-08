@@ -21,7 +21,7 @@ typedef struct
     GtkWidget *ready_queue;
     GtkWidget *blocked_queue;
     GtkWidget *running_process;
-
+    GtkWidget *delayed_queue; // Add this line
     // Control panel widgets
     GtkWidget *algorithm_combo;
     GtkWidget *quantum_spin;
