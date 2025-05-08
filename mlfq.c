@@ -145,6 +145,7 @@ void scheduleMLFQ_OneStep()
             {
                 runningPCB = dequeue(q);
                 runningPCB.state = RUNNING;
+                updateState(&runningPCB, RUNNING);
                 currentQueueLevel = i;
                 mlfqTimeSliceCounter = 0;
                 printf("MLFQ: Running PID %d from queue %d\n", runningPCB.pid, i + 1);
@@ -174,7 +175,7 @@ void scheduleMLFQ_OneStep()
     {
         demotePriority(&runningPCB);
         runningPCB.state = READY;
-
+        updateState(&runningPCB, READY);
         // Use correct queue based on new priority
         switch (runningPCB.priority)
         {

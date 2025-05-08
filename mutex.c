@@ -50,6 +50,7 @@ void semWait(Mutex *mutex, PCB *process)
     {
         printf("Process %d is BLOCKED waiting for mutex.\n", process->pid);
         process->state = BLOCKED;
+        updateState(process, BLOCKED);
         enqueue(&mutex->blockedQueue, *process);
         enqueue(&blockedQueue, *process);
         runningPCB.pid = 0; // Free the CPU
@@ -86,11 +87,14 @@ void semSignal(Mutex *mutex)
             enqueue(&blockedQueue, dequeue(&tempQueue));
 
         unblockedPCB.state = READY;
+        updateState(&unblockedPCB, READY);
+
 
         if (runningPCB.pid == 0)
         {
             runningPCB = unblockedPCB;
             runningPCB.state = RUNNING;
+            updateState(&runningPCB, RUNNING);
             printf("Process %d immediately acquired mutex and is now RUNNING.\n", runningPCB.pid);
         }
         else

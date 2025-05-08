@@ -47,6 +47,7 @@ void scheduleRR_OneStep()
     {
         printf("RR: Time quantum expired for PID %d, re-queuing\n", runningPCB.pid);
         runningPCB.state = READY;
+        updateState(&runningPCB, READY);
         enqueue(&readyQueue, runningPCB);
         runningPCB.pid = 0;
         rrTimeSliceCounter = 0;

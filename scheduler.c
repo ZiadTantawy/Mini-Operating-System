@@ -87,6 +87,7 @@ int getQuantumNumber()
 void updateProcessState(PCB *pcb, ProcessState newState)
 {
     pcb->state = newState;
+    updateState(pcb, newState); // Update state in memory too
     pcb->queueEntryTime = clockCycle; // Reset queue time on state change
 
     // Update current instruction
@@ -122,6 +123,7 @@ void checkDelayedQueue()
             printf("PCB activation Time is %d | Clock Cycle: %d\n", dpcb.activationTime, (clockCycle + 1));
             // Update state to READY
             dpcb.state = READY;
+            updateState(&dpcb, READY); // Update state in memory too
 
             // Update state in memory too
             char stateBuffer[20];
