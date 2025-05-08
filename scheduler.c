@@ -7,20 +7,25 @@
 #include "interpreter.h" // For fetchInstruction
 #include "gui.h"         // For add_log_message
 
+// Extern declarations for mutexes
+extern Mutex userInputMutex;
+extern Mutex userOutputMutex;
+extern Mutex fileMutex;
+
+// Define runningPCB
+PCB runningPCB = {0}; // Initialize runningPCB
+
 SchedulingAlgorithm currentAlgorithm = FCFS;
 PCBQueue readyQueue;
 PCBQueue blockedQueue;
 PCBQueue delayedQueue;
 int quantumNumber = 2; // Default quantum
 int clockCycle = 0;    // Global clock cycle counter
-PCB runningPCB = {0};  // Global currently executing process
 
 int rrTimeSliceCounter = 0;
 int mlfqTimeSliceCounter = 0;
 int currentQueueLevel = 0;
 int mlfqQueueCount = 4;
-
-// typedef enum { FCFS, RR, MLFQ } SchedulingAlgorithm;
 
 // Initialize queues
 void initSchedulers()
@@ -50,6 +55,31 @@ void scheduleOneInstruction()
     case MLFQ:
         scheduleMLFQ_OneStep(); // To implement next
         break;
+    }
+
+    // Add mutex cleanup logic here if the process finishes execution
+    if (runningPCB.state == TERMINATED)
+    {
+        // RELEASE MUTEXES WHEN PROCESS TERMINATES
+        if (userInputMutex.owner != NULL && userInputMutex.owner->pid == runningPCB.pid) {
+            semSignal(&userInputMutex);
+        }
+        if (userOutputMutex.owner != NULL && userOutputMutex.owner->pid == runningPCB.pid) {
+            semSignal(&userOutputMutex);
+        }
+        if (fileMutex.owner != NULL && fileMutex.owner->pid == runningPCB.pid) {
+            semSignal(&fileMutex);
+        }
+
+        // Reset runningPCB after releasing mutexes
+        runningPCB = (PCB){
+            .pid = 0,
+            .state = NEW,
+            .priority = 0,
+            .programCounter = 0,
+            .memoryStart = 0,
+            .memoryEnd = 0
+        };
     }
 }
 
@@ -101,6 +131,7 @@ void updateProcessState(PCB *pcb, ProcessState newState)
         strcpy(pcb->currentInstruction, "None");
     }
 }
+
 void checkDelayedQueue()
 {
     // Count the number of PCBs in the delayedQueue

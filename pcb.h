@@ -1,8 +1,9 @@
+// filepath: c:\Users\Manar Badawy\os project\OS_Milestone2\pcb.h
 #ifndef PCB_H
 #define PCB_H
 
-typedef enum
-{
+// Process states
+typedef enum {
     NEW,
     READY,
     RUNNING,
@@ -10,10 +11,10 @@ typedef enum
     TERMINATED
 } ProcessState;
 
-typedef struct PCB
-{
+// PCB structure
+typedef struct PCB {
     int pid;
-    ProcessState state;
+    ProcessState state; // Use ProcessState type here
     int priority;
     int programCounter;
     int memoryStart;
@@ -23,15 +24,7 @@ typedef struct PCB
     int activationTime;
 } PCB;
 
-// Add external declaration for clockCycle
-extern int clockCycle;
+// Declare runningPCB as extern
+extern PCB runningPCB;
 
-// Function declarations
-PCB createPCB(int pid, int memoryStart, int memoryEnd, int priority, int activationTime);
-void updateState(PCB *pcb, ProcessState newState);
-void incrementPC(PCB *pcb);
-const char *stateToString(ProcessState state);
-void printPCB(PCB *pcb);
-void setPriority(PCB *pcb, int newPriority);
-
-#endif
+#endif // PCB_H

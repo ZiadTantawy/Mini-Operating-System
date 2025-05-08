@@ -2,7 +2,7 @@
 #include "queue.h"
 #include "processLoader.h"
 #include "interpreter.h" // Add this include
-
+#include "pcb.h" // Include pcb.h for ProcessState and state constants
 // Global widgets structure
 AppWidgets widgets;
 GtkTextBuffer *log_buffer;
@@ -35,12 +35,15 @@ void update_process_list(AppWidgets *w)
     {
         if (strstr(memory[i].name, "PCB_") == memory[i].name)
         {
-            if (strcmp(memory[i].name, "PCB_pid") == 0)
-            {
+            if (strcmp(memory[i].name, "PCB_pid") == 0) {
+                int pid = atoi(memory[i].data);
+
+                // Skip PID 0
+                if (pid == 0) continue;
+
                 GtkTreeIter iter;
                 gtk_list_store_append(store, &iter);
 
-                int pid = atoi(memory[i].data);
                 int state = -1;
                 int priority = -1;
                 int pc = -1;
