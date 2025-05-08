@@ -56,12 +56,11 @@ void semWait(Mutex *mutex, PCB *process)
     }
 }
 
-// semSignal logic
 void semSignal(Mutex *mutex)
 {
     if (mutex->isLocked == 0)
     {
-        printf("Warning: semSignal called on an unlocked mutex.\n");
+        printf("Warning: semSignal called on unlocked mutex.\n");
         return;
     }
 
@@ -70,30 +69,22 @@ void semSignal(Mutex *mutex)
 
     if (!isEmpty(&mutex->blockedQueue))
     {
-        // Unblock the head of the blocked queue
+
         PCB unblockedPCB = dequeue(&mutex->blockedQueue);
 
-        // Remove from global blockedQueue
-        PCBQueue temp;
-        initQueue(&temp);
+        PCBQueue tempQueue;
+        initQueue(&tempQueue);
 
         while (!isEmpty(&blockedQueue))
         {
-            PCB tempPCB = dequeue(&blockedQueue);
-            if (tempPCB.pid != unblockedPCB.pid)
-            {
-                enqueue(&temp, tempPCB);
-            }
+            PCB temp = dequeue(&blockedQueue);
+            if (temp.pid != unblockedPCB.pid)
+                enqueue(&tempQueue, temp);
         }
 
-        while (!isEmpty(&temp))
-        {
-            enqueue(&blockedQueue, dequeue(&temp));
-        }
+        while (!isEmpty(&tempQueue))
+            enqueue(&blockedQueue, dequeue(&tempQueue));
 
-        // Grant mutex to unblocked process
-        mutex->isLocked = 1;
-        mutex->owner = &unblockedPCB;
         unblockedPCB.state = READY;
 
         if (runningPCB.pid == 0)
@@ -105,7 +96,7 @@ void semSignal(Mutex *mutex)
         else
         {
             enqueue(&readyQueue, unblockedPCB);
-            printf("Process %d acquired mutex and moved to READY queue.\n", unblockedPCB.pid);
+            printf("Process %d was unblocked and moved to READY queue.\n", unblockedPCB.pid);
         }
     }
 }
